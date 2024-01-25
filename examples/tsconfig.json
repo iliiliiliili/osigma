@@ -1,0 +1,20 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "noImplicitAny": false,
+    "strict": false,
+    "paths": {
+      "osigma": ["../src/"],
+      "osigma/types": ["../src/types"],
+      "osigma/utils": ["../src/utils"],
+      "osigma/utils/animate": ["../src/utils/animate"],
+      "osigma/rendering/webgl/programs/edge.rectangle": ["../src/rendering/webgl/programs/edge.rectangle.ts"],
+      "osigma/rendering/webgl/programs/edge.line": ["../src/rendering/webgl/programs/edge.line.ts"],
+      "osigma/rendering/webgl/programs/node.image": ["../src/rendering/webgl/programs/node.image.ts"],
+      "osigma/rendering/webgl/programs/common/node": ["../src/rendering/webgl/programs/common/node.ts"],
+      "osigma/rendering/webgl/programs/common/program": ["../src/rendering/webgl/programs/common/program.ts"]
+    }
+  },
+  "include": ["../external-types/**/*", "../examples/**/*", "../src/**/*"],
+  "exclude": []
+}
