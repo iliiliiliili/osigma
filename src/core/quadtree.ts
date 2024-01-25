@@ -9,7 +9,7 @@
  */
 /* eslint no-nested-ternary: 0 */
 /* eslint no-constant-condition: 0 */
-import extend from "@yomguithereal/helpers/extend";
+import extend from "./extend";
 
 /**
  * Notes:

@@ -3,7 +3,7 @@
  * ========
  * @module
  */
-import extend from "@yomguithereal/helpers/extend";
+import extend from "./core/extend";
 
 import Camera from "./core/camera";
 import MouseCaptor from "./core/captors/mouse";
