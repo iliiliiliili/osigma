@@ -3,7 +3,6 @@
  * ========
  * @module
  */
-import Graph from "graphology-types";
 import extend from "@yomguithereal/helpers/extend";
 
 import Camera from "./core/camera";

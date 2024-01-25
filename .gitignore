@@ -10,8 +10,6 @@ node_modules
 .vscode
 build
 dist
-/core/
-/rendering/
 /utils/
 /index.js
 /index.d.ts
