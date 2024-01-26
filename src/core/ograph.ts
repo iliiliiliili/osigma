@@ -1,4 +1,4 @@
-type TypedArray =
+export type TypedArray =
   | Int8Array
   | Uint8Array
   | Uint8ClampedArray
@@ -14,8 +14,23 @@ type TypedArray =
 export class OGraph<TId extends TypedArray, TConnectionWeight extends TypedArray, TFeatures extends TypedArray | TypedArray[]> {
 
     public nodes: ONodes<TId, TFeatures>;
-    public globalParams: { nodes: number, links: number } | null = null;
     public connections: OConnections<TId, TConnectionWeight>;
+
+    constructor (nodes: ONodes<TId, TFeatures>, connections: OConnections<TId, TConnectionWeight>) {
+
+        this.nodes = nodes;
+        this.connections = connections;
+    }
+
+    get nodeCount (): number {
+
+        return this.nodes.ids.length;
+    }
+
+    get connectionCount (): number {
+
+        return this.connections.from.length;
+    }
 }
 
 export interface OConnections<TId extends TypedArray, TValue extends TypedArray> {

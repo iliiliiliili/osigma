@@ -5,6 +5,7 @@
  */
 import extend from "./core/extend";
 
+import {OGraph, TypedArray} from "./core/ograph";
 import Camera from "./core/camera";
 import MouseCaptor from "./core/captors/mouse";
 import QuadTree from "./core/quadtree";
@@ -152,9 +153,9 @@ export type osigmaEvents = osigmaStageEvents & osigmaNodeEvents & osigmaEdgeEven
  * @param {HTMLElement} container - DOM container in which to render.
  * @param {object}      settings  - Optional settings.
  */
-export default class osigma<GraphType extends Graph = Graph> extends TypedEventEmitter<osigmaEvents> {
+export default class osigma<TId extends TypedArray, TConnectionWeight extends TypedArray, TFeatures extends TypedArray | TypedArray[]> extends TypedEventEmitter<osigmaEvents> {
   private settings: Settings;
-  private graph: GraphType;
+  private graph: OGraph<TId, TConnectionWeight, TFeatures>;
   private mouseCaptor: MouseCaptor;
   private touchCaptor: TouchCaptor;
   private container: HTMLElement;
@@ -205,7 +206,7 @@ export default class osigma<GraphType extends Graph = Graph> extends TypedEventE
 
   private camera: Camera;
 
-  constructor(graph: GraphType, container: HTMLElement, settings: Partial<Settings> = {}) {
+  constructor(graph: OGraph<TId, TConnectionWeight, TFeatures>, container: HTMLElement, settings: Partial<Settings> = {}) {
     super();
 
     // Resolving settings
@@ -213,7 +214,6 @@ export default class osigma<GraphType extends Graph = Graph> extends TypedEventE
 
     // Validating
     validateSettings(this.settings);
-    validateGraph(graph);
     if (!(container instanceof HTMLElement)) throw new Error("osigma: container should be an html element.");
 
     // Properties
@@ -1177,7 +1177,7 @@ export default class osigma<GraphType extends Graph = Graph> extends TypedEventE
     this.clear();
 
     // If we have no nodes we can stop right there
-    if (!this.graph.order) return exitRender();
+    if (this.graph.nodeCount <= 0) return exitRender();
 
     // TODO: improve this heuristic or move to the captor itself?
     // TODO: deal with the touch captor here as well
