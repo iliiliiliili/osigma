@@ -16,74 +16,74 @@ import easings from "./easings";
 export type Easing = keyof typeof easings | ((k: number) => number);
 
 export interface AnimateOptions {
-  easing: Easing;
-  duration: number;
+    easing: Easing;
+    duration: number;
 }
 export const ANIMATE_DEFAULTS = {
-  easing: "quadraticInOut",
-  duration: 150,
+    easing: "quadraticInOut",
+    duration: 150,
 };
 
 /**
  * Function used to animate the nodes.
  */
 export function animateNodes(
-  graph: Graph,
-  targets: PlainObject<PlainObject<number>>,
-  opts: Partial<AnimateOptions>,
-  callback?: () => void,
+    graph: Graph,
+    targets: PlainObject<PlainObject<number>>,
+    opts: Partial<AnimateOptions>,
+    callback?: () => void,
 ): () => void {
-  const options: AnimateOptions = Object.assign({}, ANIMATE_DEFAULTS, opts);
+    const options: AnimateOptions = Object.assign({}, ANIMATE_DEFAULTS, opts);
 
-  const easing: (k: number) => number = typeof options.easing === "function" ? options.easing : easings[options.easing];
+    const easing: (k: number) => number = typeof options.easing === "function" ? options.easing : easings[options.easing];
 
-  const start = Date.now();
+    const start = Date.now();
 
-  const startPositions: PlainObject<PlainObject<number>> = {};
-
-  for (const node in targets) {
-    const attrs = targets[node];
-    startPositions[node] = {};
-
-    for (const k in attrs) startPositions[node][k] = graph.getNodeAttribute(node, k);
-  }
-
-  let frame: number | null = null;
-
-  const step = () => {
-    frame = null;
-
-    let p = (Date.now() - start) / options.duration;
-
-    if (p >= 1) {
-      // Animation is done
-      for (const node in targets) {
-        const attrs = targets[node];
-
-        // We use given values to avoid precision issues and for convenience
-        for (const k in attrs) graph.setNodeAttribute(node, k, attrs[k]);
-      }
-
-      if (typeof callback === "function") callback();
-
-      return;
-    }
-
-    p = easing(p);
+    const startPositions: PlainObject<PlainObject<number>> = {};
 
     for (const node in targets) {
-      const attrs = targets[node];
-      const s = startPositions[node];
+        const attrs = targets[node];
+        startPositions[node] = {};
 
-      for (const k in attrs) graph.setNodeAttribute(node, k, attrs[k] * p + s[k] * (1 - p));
+        for (const k in attrs) startPositions[node][k] = graph.getNodeAttribute(node, k);
     }
 
-    frame = requestFrame(step);
-  };
+    let frame: number | null = null;
 
-  step();
+    const step = () => {
+        frame = null;
 
-  return () => {
-    if (frame) cancelFrame(frame);
-  };
+        let p = (Date.now() - start) / options.duration;
+
+        if (p >= 1) {
+            // Animation is done
+            for (const node in targets) {
+                const attrs = targets[node];
+
+                // We use given values to avoid precision issues and for convenience
+                for (const k in attrs) graph.setNodeAttribute(node, k, attrs[k]);
+            }
+
+            if (typeof callback === "function") callback();
+
+            return;
+        }
+
+        p = easing(p);
+
+        for (const node in targets) {
+            const attrs = targets[node];
+            const s = startPositions[node];
+
+            for (const k in attrs) graph.setNodeAttribute(node, k, attrs[k] * p + s[k] * (1 - p));
+        }
+
+        frame = requestFrame(step);
+    };
+
+    step();
+
+    return () => {
+        if (frame) cancelFrame(frame);
+    };
 }

@@ -9,40 +9,39 @@ import { AbstractProgram, Program } from "./program";
 import { NodeDisplayData, EdgeDisplayData, RenderParams } from "../../../../types";
 
 export abstract class AbstractEdgeProgram extends AbstractProgram {
-  abstract process(
-    offset: number,
-    sourceData: NodeDisplayData,
-    targetData: NodeDisplayData,
-    data: EdgeDisplayData,
-  ): void;
+    abstract process(
+        offset: number,
+        sourceData: NodeDisplayData,
+        targetData: NodeDisplayData,
+        data: EdgeDisplayData,
+    ): void;
 }
 
 export abstract class EdgeProgram<Uniform extends string = string>
-  extends Program<Uniform>
-  implements AbstractEdgeProgram
-{
-  process(offset: number, sourceData: NodeDisplayData, targetData: NodeDisplayData, data: EdgeDisplayData): void {
-    let i = offset * this.STRIDE;
-    // NOTE: dealing with hidden items automatically
-    if (data.hidden || sourceData.hidden || targetData.hidden) {
-      for (let l = i + this.STRIDE; i < l; i++) {
-        this.array[i] = 0;
-      }
-      return;
-    }
+    extends Program<Uniform>
+    implements AbstractEdgeProgram {
+    process(offset: number, sourceData: NodeDisplayData, targetData: NodeDisplayData, data: EdgeDisplayData): void {
+        let i = offset * this.STRIDE;
+        // NOTE: dealing with hidden items automatically
+        if (data.hidden || sourceData.hidden || targetData.hidden) {
+            for (let l = i + this.STRIDE; i < l; i++) {
+                this.array[i] = 0;
+            }
+            return;
+        }
 
-    return this.processVisibleItem(i, sourceData, targetData, data);
-  }
-  abstract processVisibleItem(
-    i: number,
-    sourceData: NodeDisplayData,
-    targetData: NodeDisplayData,
-    data: EdgeDisplayData,
-  ): void;
+        return this.processVisibleItem(i, sourceData, targetData, data);
+    }
+    abstract processVisibleItem(
+        i: number,
+        sourceData: NodeDisplayData,
+        targetData: NodeDisplayData,
+        data: EdgeDisplayData,
+    ): void;
 }
 
 export interface EdgeProgramConstructor {
-  new (gl: WebGLRenderingContext, renderer: osigma): AbstractEdgeProgram;
+    new(gl: WebGLRenderingContext, renderer: osigma): AbstractEdgeProgram;
 }
 
 /**
@@ -54,25 +53,25 @@ export interface EdgeProgramConstructor {
  * @return {function}
  */
 export function createEdgeCompoundProgram(programClasses: Array<EdgeProgramConstructor>): EdgeProgramConstructor {
-  return class EdgeCompoundProgram implements AbstractEdgeProgram {
-    programs: Array<AbstractEdgeProgram>;
+    return class EdgeCompoundProgram implements AbstractEdgeProgram {
+        programs: Array<AbstractEdgeProgram>;
 
-    constructor(gl: WebGLRenderingContext, renderer: osigma) {
-      this.programs = programClasses.map((Program) => {
-        return new Program(gl, renderer);
-      });
-    }
+        constructor(gl: WebGLRenderingContext, renderer: osigma) {
+            this.programs = programClasses.map((Program) => {
+                return new Program(gl, renderer);
+            });
+        }
 
-    reallocate(capacity: number): void {
-      this.programs.forEach((program) => program.reallocate(capacity));
-    }
+        reallocate(capacity: number): void {
+            this.programs.forEach((program) => program.reallocate(capacity));
+        }
 
-    process(offset: number, sourceData: NodeDisplayData, targetData: NodeDisplayData, data: EdgeDisplayData): void {
-      this.programs.forEach((program) => program.process(offset, sourceData, targetData, data));
-    }
+        process(offset: number, sourceData: NodeDisplayData, targetData: NodeDisplayData, data: EdgeDisplayData): void {
+            this.programs.forEach((program) => program.process(offset, sourceData, targetData, data));
+        }
 
-    render(params: RenderParams): void {
-      this.programs.forEach((program) => program.render(params));
-    }
-  };
+        render(params: RenderParams): void {
+            this.programs.forEach((program) => program.render(params));
+        }
+    };
 }

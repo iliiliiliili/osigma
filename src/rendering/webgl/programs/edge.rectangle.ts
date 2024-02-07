@@ -26,104 +26,104 @@ const { UNSIGNED_BYTE, FLOAT } = WebGLRenderingContext;
 const UNIFORMS = ["u_matrix", "u_zoomRatio", "u_sizeRatio", "u_correctionRatio"] as const;
 
 export default class EdgeRectangleProgram extends EdgeProgram<typeof UNIFORMS[number]> {
-  getDefinition() {
-    return {
-      VERTICES: 4,
-      ARRAY_ITEMS_PER_VERTEX: 5,
-      VERTEX_SHADER_SOURCE,
-      FRAGMENT_SHADER_SOURCE,
-      UNIFORMS,
-      ATTRIBUTES: [
-        { name: "a_position", size: 2, type: FLOAT },
-        { name: "a_normal", size: 2, type: FLOAT },
-        { name: "a_color", size: 4, type: UNSIGNED_BYTE, normalized: true },
-      ],
-    };
-  }
-
-  reallocateIndices() {
-    const l = this.verticesCount;
-    const size = l + l / 2;
-    const indices = new this.IndicesArray(size);
-
-    for (let i = 0, c = 0; i < l; i += 4) {
-      indices[c++] = i;
-      indices[c++] = i + 1;
-      indices[c++] = i + 2;
-      indices[c++] = i + 2;
-      indices[c++] = i + 1;
-      indices[c++] = i + 3;
+    getDefinition() {
+        return {
+            VERTICES: 4,
+            ARRAY_ITEMS_PER_VERTEX: 5,
+            VERTEX_SHADER_SOURCE,
+            FRAGMENT_SHADER_SOURCE,
+            UNIFORMS,
+            ATTRIBUTES: [
+                { name: "a_position", size: 2, type: FLOAT },
+                { name: "a_normal", size: 2, type: FLOAT },
+                { name: "a_color", size: 4, type: UNSIGNED_BYTE, normalized: true },
+            ],
+        };
     }
 
-    this.indicesArray = indices;
-  }
+    reallocateIndices() {
+        const l = this.verticesCount;
+        const size = l + l / 2;
+        const indices = new this.IndicesArray(size);
 
-  processVisibleItem(i: number, sourceData: NodeDisplayData, targetData: NodeDisplayData, data: EdgeDisplayData) {
-    const thickness = data.size || 1;
-    const x1 = sourceData.x;
-    const y1 = sourceData.y;
-    const x2 = targetData.x;
-    const y2 = targetData.y;
-    const color = floatColor(data.color);
+        for (let i = 0, c = 0; i < l; i += 4) {
+            indices[c++] = i;
+            indices[c++] = i + 1;
+            indices[c++] = i + 2;
+            indices[c++] = i + 2;
+            indices[c++] = i + 1;
+            indices[c++] = i + 3;
+        }
 
-    // Computing normals
-    const dx = x2 - x1;
-    const dy = y2 - y1;
-
-    let len = dx * dx + dy * dy;
-    let n1 = 0;
-    let n2 = 0;
-
-    if (len) {
-      len = 1 / Math.sqrt(len);
-
-      n1 = -dy * len * thickness;
-      n2 = dx * len * thickness;
+        this.indicesArray = indices;
     }
 
-    const array = this.array;
+    processVisibleItem(i: number, sourceData: NodeDisplayData, targetData: NodeDisplayData, data: EdgeDisplayData) {
+        const thickness = data.size || 1;
+        const x1 = sourceData.x;
+        const y1 = sourceData.y;
+        const x2 = targetData.x;
+        const y2 = targetData.y;
+        const color = floatColor(data.color);
 
-    // First point
-    array[i++] = x1;
-    array[i++] = y1;
-    array[i++] = n1;
-    array[i++] = n2;
-    array[i++] = color;
+        // Computing normals
+        const dx = x2 - x1;
+        const dy = y2 - y1;
 
-    // First point flipped
-    array[i++] = x1;
-    array[i++] = y1;
-    array[i++] = -n1;
-    array[i++] = -n2;
-    array[i++] = color;
+        let len = dx * dx + dy * dy;
+        let n1 = 0;
+        let n2 = 0;
 
-    // Second point
-    array[i++] = x2;
-    array[i++] = y2;
-    array[i++] = n1;
-    array[i++] = n2;
-    array[i++] = color;
+        if (len) {
+            len = 1 / Math.sqrt(len);
 
-    // Second point flipped
-    array[i++] = x2;
-    array[i++] = y2;
-    array[i++] = -n1;
-    array[i++] = -n2;
-    array[i] = color;
-  }
+            n1 = -dy * len * thickness;
+            n2 = dx * len * thickness;
+        }
 
-  draw(params: RenderParams): void {
-    const gl = this.gl;
+        const array = this.array;
 
-    const { u_matrix, u_zoomRatio, u_correctionRatio, u_sizeRatio } = this.uniformLocations;
+        // First point
+        array[i++] = x1;
+        array[i++] = y1;
+        array[i++] = n1;
+        array[i++] = n2;
+        array[i++] = color;
 
-    gl.uniformMatrix3fv(u_matrix, false, params.matrix);
-    gl.uniform1f(u_zoomRatio, params.zoomRatio);
-    gl.uniform1f(u_sizeRatio, params.sizeRatio);
-    gl.uniform1f(u_correctionRatio, params.correctionRatio);
+        // First point flipped
+        array[i++] = x1;
+        array[i++] = y1;
+        array[i++] = -n1;
+        array[i++] = -n2;
+        array[i++] = color;
 
-    if (!this.indicesArray) throw new Error("EdgeRectangleProgram: indicesArray should be allocated when drawing!");
+        // Second point
+        array[i++] = x2;
+        array[i++] = y2;
+        array[i++] = n1;
+        array[i++] = n2;
+        array[i++] = color;
 
-    gl.drawElements(gl.TRIANGLES, this.indicesArray.length, this.indicesType, 0);
-  }
+        // Second point flipped
+        array[i++] = x2;
+        array[i++] = y2;
+        array[i++] = -n1;
+        array[i++] = -n2;
+        array[i] = color;
+    }
+
+    draw(params: RenderParams): void {
+        const gl = this.gl;
+
+        const { u_matrix, u_zoomRatio, u_correctionRatio, u_sizeRatio } = this.uniformLocations;
+
+        gl.uniformMatrix3fv(u_matrix, false, params.matrix);
+        gl.uniform1f(u_zoomRatio, params.zoomRatio);
+        gl.uniform1f(u_sizeRatio, params.sizeRatio);
+        gl.uniform1f(u_correctionRatio, params.correctionRatio);
+
+        if (!this.indicesArray) throw new Error("EdgeRectangleProgram: indicesArray should be allocated when drawing!");
+
+        gl.drawElements(gl.TRIANGLES, this.indicesArray.length, this.indicesType, 0);
+    }
 }

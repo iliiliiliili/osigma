@@ -9,30 +9,29 @@ import { AbstractProgram, Program } from "./program";
 import { NodeDisplayData, RenderParams } from "../../../../types";
 
 export abstract class AbstractNodeProgram extends AbstractProgram {
-  abstract process(offset: number, data: NodeDisplayData): void;
+    abstract process(offset: number, data: NodeDisplayData): void;
 }
 
 export abstract class NodeProgram<Uniform extends string = string>
-  extends Program<Uniform>
-  implements AbstractNodeProgram
-{
-  process(offset: number, data: NodeDisplayData): void {
-    let i = offset * this.STRIDE;
-    // NOTE: dealing with hidden items automatically
-    if (data.hidden) {
-      for (let l = i + this.STRIDE; i < l; i++) {
-        this.array[i] = 0;
-      }
-      return;
-    }
+    extends Program<Uniform>
+    implements AbstractNodeProgram {
+    process(offset: number, data: NodeDisplayData): void {
+        let i = offset * this.STRIDE;
+        // NOTE: dealing with hidden items automatically
+        if (data.hidden) {
+            for (let l = i + this.STRIDE; i < l; i++) {
+                this.array[i] = 0;
+            }
+            return;
+        }
 
-    return this.processVisibleItem(i, data);
-  }
-  abstract processVisibleItem(i: number, data: NodeDisplayData): void;
+        return this.processVisibleItem(i, data);
+    }
+    abstract processVisibleItem(i: number, data: NodeDisplayData): void;
 }
 
 export interface NodeProgramConstructor {
-  new (gl: WebGLRenderingContext, renderer: osigma): AbstractNodeProgram;
+    new(gl: WebGLRenderingContext, renderer: osigma): AbstractNodeProgram;
 }
 
 /**
@@ -44,25 +43,25 @@ export interface NodeProgramConstructor {
  * @return {function}
  */
 export function createNodeCompoundProgram(programClasses: Array<NodeProgramConstructor>): NodeProgramConstructor {
-  return class NodeCompoundProgram implements AbstractNodeProgram {
-    programs: Array<AbstractNodeProgram>;
+    return class NodeCompoundProgram implements AbstractNodeProgram {
+        programs: Array<AbstractNodeProgram>;
 
-    constructor(gl: WebGLRenderingContext, renderer: osigma) {
-      this.programs = programClasses.map((Program) => {
-        return new Program(gl, renderer);
-      });
-    }
+        constructor(gl: WebGLRenderingContext, renderer: osigma) {
+            this.programs = programClasses.map((Program) => {
+                return new Program(gl, renderer);
+            });
+        }
 
-    reallocate(capacity: number): void {
-      this.programs.forEach((program) => program.reallocate(capacity));
-    }
+        reallocate(capacity: number): void {
+            this.programs.forEach((program) => program.reallocate(capacity));
+        }
 
-    process(offset: number, data: NodeDisplayData): void {
-      this.programs.forEach((program) => program.process(offset, data));
-    }
+        process(offset: number, data: NodeDisplayData): void {
+            this.programs.forEach((program) => program.process(offset, data));
+        }
 
-    render(params: RenderParams): void {
-      this.programs.forEach((program) => program.render(params));
-    }
-  };
+        render(params: RenderParams): void {
+            this.programs.forEach((program) => program.render(params));
+        }
+    };
 }
