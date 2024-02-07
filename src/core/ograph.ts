@@ -1,3 +1,5 @@
+import { Listener } from "../types";
+
 export type TypedArray =
     | Int8Array
     | Uint8Array
@@ -11,12 +13,65 @@ export type TypedArray =
     | BigInt64Array
     | BigUint64Array;
 
-export class OGraph<TId extends TypedArray, TConnectionWeight extends TypedArray, TFeatures extends TypedArray | TypedArray[]> {
+
+export type OGraphEvent = "nodeAdded" |
+    "nodeDropped" |
+    "nodeAttributesUpdated" |
+    "eachNodeAttributesUpdated" |
+    "edgeAdded" |
+    "edgeDropped" |
+    "edgeAttributesUpdated" |
+    "eachEdgeAttributesUpdated" |
+    "edgesCleared" |
+    "cleared";
+
+
+export class OGraphEventEmitter {
+
+    protected listeners: Record<string, Listener[]> = { "a": [] };
+
+    public on(event: OGraphEvent, listener: Listener) {
+
+        if (!(event in this.listeners)) {
+
+            this.listeners[event] = [];
+        }
+
+        this.listeners[event].push(listener);
+    }
+
+    public removeListener(event: OGraphEvent, listener: Listener) {
+
+        if (event in this.listeners) {
+
+            const index = this.listeners[event].indexOf(listener);
+
+            if (index !== -1) {
+                this.listeners[event].splice(index, 1);
+            }
+        }
+    }
+
+    protected call(event: OGraphEvent) {
+
+        if (event in this.listeners) {
+
+            this.listeners[event].forEach(element => {
+                element();
+            });
+        }
+    }
+}
+
+
+export class OGraph<TId extends TypedArray, TConnectionWeight extends TypedArray, TFeatures extends TypedArray | TypedArray[]> extends OGraphEventEmitter {
 
     public nodes: ONodes<TId, TFeatures>;
     public connections: OConnections<TId, TConnectionWeight>;
 
     constructor(nodes: ONodes<TId, TFeatures>, connections: OConnections<TId, TConnectionWeight>) {
+
+        super();
 
         this.nodes = nodes;
         this.connections = connections;
