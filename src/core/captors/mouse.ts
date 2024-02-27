@@ -132,7 +132,7 @@ export default class MouseCaptor extends Captor<MouseCaptorEvents> {
         const mouseCoords = getMouseCoords(e, this.container);
         this.emit("doubleClick", mouseCoords);
 
-        if (mouseCoords.osigmaDefaultPrevented) return;
+        if (mouseCoords.OsigmaDefaultPrevented) return;
 
         // default behavior
         const camera = this.renderer.getCamera();
@@ -230,7 +230,7 @@ export default class MouseCaptor extends Captor<MouseCaptorEvents> {
             this.emit("mousemove", mouseCoords);
         }
 
-        if (mouseCoords.osigmaDefaultPrevented) return;
+        if (mouseCoords.OsigmaDefaultPrevented) return;
 
         // Handle the case when "isMouseDown" all the time, to allow dragging the
         // stage while the mouse is not hover the container:
@@ -289,7 +289,7 @@ export default class MouseCaptor extends Captor<MouseCaptorEvents> {
         const wheelCoords = getWheelCoords(e, this.container);
         this.emit("wheel", wheelCoords);
 
-        if (wheelCoords.osigmaDefaultPrevented) return;
+        if (wheelCoords.OsigmaDefaultPrevented) return;
 
         // Default behavior
         const ratioDiff = delta > 0 ? 1 / ZOOMING_RATIO : ZOOMING_RATIO;

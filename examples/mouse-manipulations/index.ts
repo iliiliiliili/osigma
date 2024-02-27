@@ -56,7 +56,7 @@ renderer.getMouseCaptor().on("mousemovebody", (e) => {
   graph.setNodeAttribute(draggedNode, "y", pos.y);
 
   // Prevent osigma to move camera:
-  e.preventosigmaDefault();
+  e.preventOsigmaDefault();
   e.original.preventDefault();
   e.original.stopPropagation();
 });

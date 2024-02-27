@@ -46,7 +46,7 @@ const DescriptionPanel: FC = () => {
           react
         </a>{" "}
         and{" "}
-        <a target="_blank" rel="noreferrer" href="https://www.osigmajs.org">
+        <a target="_blank" rel="noreferrer" href="https://www.Osigmajs.org">
           osigma.js
         </a>
         . You can read the source code{" "}

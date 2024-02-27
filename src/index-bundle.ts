@@ -7,16 +7,16 @@
  * useful classes as static properties.
  * @module
  */
-import osigmaClass from "./osigma";
+import OsigmaClass from "./osigma";
 import Camera from "./core/camera";
 import QuadTree from "./core/quadtree";
 import MouseCaptor from "./core/captors/mouse";
 
-class osigma extends osigmaClass {
+class osigma extends OsigmaClass {
     static Camera = Camera;
     static QuadTree = QuadTree;
     static MouseCaptor = MouseCaptor;
-    static osigma = osigmaClass;
+    static osigma = OsigmaClass;
 }
 
 module.exports = osigma;

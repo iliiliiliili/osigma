@@ -40,7 +40,7 @@ import { edgeLabelsToDisplayFromNodes, LabelGrid } from "./core/labels";
 import { Settings, validateSettings, resolveSettings } from "./settings";
 import { AbstractNodeProgram } from "./rendering/webgl/programs/common/node";
 import { AbstractEdgeProgram } from "./rendering/webgl/programs/common/edge";
-import TouchCaptor, { FakeosigmaMouseEvent } from "./core/captors/touch";
+import TouchCaptor, { FakeOsigmaMouseEvent } from "./core/captors/touch";
 import { identity, multiplyVec2 } from "./utils/matrices";
 import { doEdgeCollideWithPoint, isPixelColored } from "./utils/edge-collisions";
 
@@ -102,32 +102,32 @@ function applyEdgeDefaults(settings: Settings, key: string, data: Partial<EdgeDi
 /**
  * Event types.
  */
-export interface osigmaEventPayload {
+export interface OsigmaEventPayload {
     event: MouseCoords;
-    preventosigmaDefault(): void;
+    preventOsigmaDefault(): void;
 }
 
-export interface osigmaStageEventPayload extends osigmaEventPayload { }
-export interface osigmaNodeEventPayload extends osigmaEventPayload {
-    node: string;
+export interface OsigmaStageEventPayload extends OsigmaEventPayload { }
+export interface OsigmaNodeEventPayload extends OsigmaEventPayload {
+    node: number;
 }
-export interface osigmaEdgeEventPayload extends osigmaEventPayload {
-    edge: string;
+export interface OsigmaEdgeEventPayload extends OsigmaEventPayload {
+    edge: number;
 }
 
-export type osigmaStageEvents = {
-    [E in MouseInteraction as `${E}Stage`]: (payload: osigmaStageEventPayload) => void;
+export type OsigmaStageEvents = {
+    [E in MouseInteraction as `${E}Stage`]: (payload: OsigmaStageEventPayload) => void;
 };
 
-export type osigmaNodeEvents = {
-    [E in MouseInteraction as `${E}Node`]: (payload: osigmaNodeEventPayload) => void;
+export type OsigmaNodeEvents = {
+    [E in MouseInteraction as `${E}Node`]: (payload: OsigmaNodeEventPayload) => void;
 };
 
-export type osigmaEdgeEvents = {
-    [E in MouseInteraction as `${E}Edge`]: (payload: osigmaEdgeEventPayload) => void;
+export type OsigmaEdgeEvents = {
+    [E in MouseInteraction as `${E}Edge`]: (payload: OsigmaEdgeEventPayload) => void;
 };
 
-export type osigmaAdditionalEvents = {
+export type OsigmaAdditionalEvents = {
     // Lifecycle events
     beforeRender(): void;
     afterRender(): void;
@@ -135,15 +135,15 @@ export type osigmaAdditionalEvents = {
     kill(): void;
 
     // Additional node events
-    enterNode(payload: osigmaNodeEventPayload): void;
-    leaveNode(payload: osigmaNodeEventPayload): void;
+    enterNode(payload: OsigmaNodeEventPayload): void;
+    leaveNode(payload: OsigmaNodeEventPayload): void;
 
     // Additional edge events
-    enterEdge(payload: osigmaEdgeEventPayload): void;
-    leaveEdge(payload: osigmaEdgeEventPayload): void;
+    enterEdge(payload: OsigmaEdgeEventPayload): void;
+    leaveEdge(payload: OsigmaEdgeEventPayload): void;
 };
 
-export type osigmaEvents = osigmaStageEvents & osigmaNodeEvents & osigmaEdgeEvents & osigmaAdditionalEvents;
+export type OsigmaEvents = OsigmaStageEvents & OsigmaNodeEvents & OsigmaEdgeEvents & OsigmaAdditionalEvents;
 
 /**
  * Main class.
@@ -153,7 +153,7 @@ export type osigmaEvents = osigmaStageEvents & osigmaNodeEvents & osigmaEdgeEven
  * @param {HTMLElement} container - DOM container in which to render.
  * @param {object}      settings  - Optional settings.
  */
-export default class osigma<TId extends TypedArray, TConnectionWeight extends TypedArray, TCoordinates extends TypedArray, TFeatures extends TypedArray[]> extends TypedEventEmitter<osigmaEvents> {
+export default class osigma<TId extends TypedArray, TConnectionWeight extends TypedArray, TCoordinates extends TypedArray, TFeatures extends TypedArray[]> extends TypedEventEmitter<OsigmaEvents> {
     private settings: Settings;
     private graph: OGraph<TId, TConnectionWeight, TCoordinates, TFeatures>;
     private mouseCaptor: MouseCaptor;
@@ -458,8 +458,8 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
         this.activeListeners.handleMove = (e: MouseCoords): void => {
             const baseEvent = {
                 event: e,
-                preventosigmaDefault(): void {
-                    e.preventosigmaDefault();
+                preventOsigmaDefault(): void {
+                    e.preventOsigmaDefault();
                 },
             };
 
@@ -509,13 +509,13 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
             return (e) => {
                 const baseEvent = {
                     event: e,
-                    preventosigmaDefault(): void {
-                        e.preventosigmaDefault();
+                    preventOsigmaDefault(): void {
+                        e.preventOsigmaDefault();
                     },
                 };
 
-                const isFakeosigmaMouseEvent = (e.original as FakeosigmaMouseEvent).isFakeosigmaMouseEvent;
-                const nodeAtPosition = isFakeosigmaMouseEvent ? this.getNodeAtPosition(e) : this.hoveredNode;
+                const isFakeOsigmaMouseEvent = (e.original as FakeOsigmaMouseEvent).isFakeOsigmaMouseEvent;
+                const nodeAtPosition = isFakeOsigmaMouseEvent ? this.getNodeAtPosition(e) : this.hoveredNode;
 
                 if (nodeAtPosition)
                     return this.emit(`${eventType}Node`, {
@@ -632,7 +632,7 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
      *
      * @return {osigma}
      */
-    private checkEdgeHoverEvents(payload: osigmaEventPayload): this {
+    private checkEdgeHoverEvents(payload: OsigmaEventPayload): this {
         const edgeToHover = this.hoveredNode ? null : this.getEdgeAtPoint(payload.event.x, payload.event.y);
 
         if (edgeToHover !== this.hoveredEdge) {
@@ -648,7 +648,7 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
      * Method looking for an edge colliding with a given point at (x, y). Returns
      * the key of the edge if any, or null else.
      */
-    private getEdgeAtPoint(x: number, y: number): string | null {
+    private getEdgeAtPoint(x: number, y: number): number | null {
         const { edgeDataCache, nodeDataCache } = this;
 
         // Check first that pixel is colored:
@@ -711,7 +711,7 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
         // otherwise select edge with highest zIndex
         let highestZIndex = -Infinity;
         for (const edge of edges) {
-            const zIndex = this.graph.getEdgeAttribute(edge, "zIndex");
+            const zIndex = this.graph.connections.zIndex[edge];
             if (zIndex >= highestZIndex) {
                 selectedEdge = edge;
                 highestZIndex = zIndex;

@@ -23,6 +23,7 @@ export type OGraphEvent =
     | "edgesCleared"
     | "cleared";
 
+
 export class OGraphEventEmitter {
     protected listeners: Record<string, Listener[]> = { a: [] };
 

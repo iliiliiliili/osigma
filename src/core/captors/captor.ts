@@ -40,9 +40,9 @@ export function getPosition(e: MouseEvent | Touch, dom: HTMLElement): Coordinate
 export function getMouseCoords(e: MouseEvent, dom: HTMLElement): MouseCoords {
     const res: MouseCoords = {
         ...getPosition(e, dom),
-        osigmaDefaultPrevented: false,
-        preventosigmaDefault(): void {
-            res.osigmaDefaultPrevented = true;
+        OsigmaDefaultPrevented: false,
+        preventOsigmaDefault(): void {
+            res.OsigmaDefaultPrevented = true;
         },
         original: e,
     };

@@ -13,7 +13,7 @@ const DRAG_TIMEOUT = 200;
 const TOUCH_INERTIA_RATIO = 3;
 const TOUCH_INERTIA_DURATION = 200;
 
-export type FakeosigmaMouseEvent = MouseEvent & { isFakeosigmaMouseEvent?: true };
+export type FakeOsigmaMouseEvent = MouseEvent & { isFakeOsigmaMouseEvent?: true };
 
 /**
  * Event types.
@@ -83,7 +83,7 @@ export default class TouchCaptor extends Captor<TouchCaptorEvents> {
             ctrlKey: e.ctrlKey,
         });
 
-        (mouseEvent as FakeosigmaMouseEvent).isFakeosigmaMouseEvent = true;
+        (mouseEvent as FakeOsigmaMouseEvent).isFakeOsigmaMouseEvent = true;
 
         (emitter || this.container).dispatchEvent(mouseEvent);
     }
