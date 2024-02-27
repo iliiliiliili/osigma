@@ -82,6 +82,9 @@ export interface OGraphologyInterface<
             targetCoordinates: [number, number]
         ) => boolean
     ): number[];
+
+    get order() : number;
+    
 }
 
 export class OGraph<
@@ -93,11 +96,11 @@ export class OGraph<
     extends OGraphEventEmitter
     implements OGraphologyInterface<TId, TConnectionWeight, TFeatures>
 {
-    public nodes: OSpatialNodes<TId, TCoordinates, TFeatures>;
+    public nodes: OSpatialNodes<TCoordinates, TFeatures>;
     public connections: OSpatialConnections<TId, TCoordinates, TConnectionWeight>;
 
-    constructor(
-        nodes: OSpatialNodes<TId, TCoordinates, TFeatures>,
+    public constructor(
+        nodes: OSpatialNodes<TCoordinates, TFeatures>,
         connections: OSpatialConnections<TId, TCoordinates, TConnectionWeight>
     ) {
         super();
@@ -112,6 +115,12 @@ export class OGraph<
 
     get connectionCount(): number {
         return this.connections.from.length;
+    }
+
+    // OGraphologyInterface implementation start
+
+    get order(): number {
+        return this.nodeCount;
     }
 
     public someEdge(
@@ -184,6 +193,8 @@ export class OGraph<
 
         return result;
     }
+    
+    // OGraphologyInterface implementation end
 }
 
 export interface OConnections<
@@ -196,10 +207,8 @@ export interface OConnections<
 }
 
 export interface ONodes<
-    TId extends TypedArray,
     TFeatures extends TypedArray[]
 > {
-    ids: TId;
     features: TFeatures;
 }
 
@@ -215,11 +224,9 @@ export interface OSpatialConnections<
 }
 
 export interface OSpatialNodes<
-    TId extends TypedArray,
     TCoordinates extends TypedArray,
     TFeatures extends TypedArray[]
-> extends ONodes<TId, TFeatures> {
-    ids: TId;
+> extends ONodes<TFeatures> {
     xCoordinates: TCoordinates;
     yCoordinates: TCoordinates;
     features: TFeatures;
