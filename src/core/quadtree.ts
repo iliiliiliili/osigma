@@ -222,8 +222,8 @@ function buildQuadrants(maxLevel: number, data: Float32Array): void {
 function insertNode(
     maxLevel: number,
     data: Float32Array,
-    containers: Record<number, string[]>,
-    key: string,
+    containers: Record<number, number[]>,
+    key: number,
     x: number,
     y: number,
     size: number,
@@ -350,16 +350,16 @@ function insertNode(
 function getNodesInAxisAlignedRectangleArea(
     maxLevel: number,
     data: Float32Array,
-    containers: Record<number, string[]>,
+    containers: Record<number, number[]>,
     x1: number,
     y1: number,
     w: number,
     h: number,
-): string[] {
+): number[] {
     // [block, level]
     const stack = [0, 0];
 
-    const collectedNodes: string[] = [];
+    const collectedNodes: number[] = [];
 
     let container;
 
@@ -444,8 +444,8 @@ function getNodesInAxisAlignedRectangleArea(
  */
 export default class QuadTree {
     data: Float32Array;
-    containers: Record<number, string[]> = { [OUTSIDE_BLOCK]: [] };
-    cache: string[] | null = null;
+    containers: Record<number, number[]> = { [OUTSIDE_BLOCK]: [] };
+    cache: number[] | null = null;
     lastRectangle: Rectangle | null = null;
 
     constructor(params: { boundaries?: Boundaries } = {}) {
@@ -463,7 +463,7 @@ export default class QuadTree {
             });
     }
 
-    add(key: string, x: number, y: number, size: number): QuadTree {
+    add(key: number, x: number, y: number, size: number): QuadTree {
         insertNode(MAX_LEVEL, this.data, this.containers, key, x, y, size);
 
         return this;
@@ -487,7 +487,7 @@ export default class QuadTree {
         return this;
     }
 
-    point(x: number, y: number): string[] {
+    point(x: number, y: number): number[] {
         const nodes = this.containers[OUTSIDE_BLOCK].slice();
 
         let block = 0,
@@ -512,11 +512,11 @@ export default class QuadTree {
         return nodes;
     }
 
-    rectangle(x1: number, y1: number, x2: number, y2: number, height: number): string[] {
+    rectangle(x1: number, y1: number, x2: number, y2: number, height: number): number[] {
         const lr = this.lastRectangle;
 
         if (lr && x1 === lr.x1 && x2 === lr.x2 && y1 === lr.y1 && y2 === lr.y2 && height === lr.height) {
-            return this.cache as string[];
+            return this.cache as number[];
         }
 
         this.lastRectangle = {
