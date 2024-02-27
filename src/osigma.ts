@@ -153,9 +153,9 @@ export type osigmaEvents = osigmaStageEvents & osigmaNodeEvents & osigmaEdgeEven
  * @param {HTMLElement} container - DOM container in which to render.
  * @param {object}      settings  - Optional settings.
  */
-export default class osigma<TId extends TypedArray, TConnectionWeight extends TypedArray, TFeatures extends TypedArray | TypedArray[]> extends TypedEventEmitter<osigmaEvents> {
+export default class osigma<TId extends TypedArray, TConnectionWeight extends TypedArray, TCoordinates extends TypedArray, TFeatures extends TypedArray[]> extends TypedEventEmitter<osigmaEvents> {
     private settings: Settings;
-    private graph: OGraph<TId, TConnectionWeight, TFeatures>;
+    private graph: OGraph<TId, TConnectionWeight, TCoordinates, TFeatures>;
     private mouseCaptor: MouseCaptor;
     private touchCaptor: TouchCaptor;
     private container: HTMLElement;
@@ -206,7 +206,7 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
 
     private camera: Camera;
 
-    constructor(graph: OGraph<TId, TConnectionWeight, TFeatures>, container: HTMLElement, settings: Partial<Settings> = {}) {
+    constructor(graph: OGraph<TId, TConnectionWeight, TCoordinates, TFeatures>, container: HTMLElement, settings: Partial<Settings> = {}) {
         super();
 
         // Resolving settings
@@ -683,22 +683,24 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
         if (!transformationRatio) return null;
 
         // Now we can look for matching edges:
-        const edges = this.graph.filterEdges((key, edgeAttributes, sourceId, targetId, sourcePosition, targetPosition) => {
+        const edges = this.graph.filterEdges((key, _, sourceId, targetId, sourcePosition, targetPosition) => {
             if (edgeDataCache[key].hidden || nodeDataCache[sourceId].hidden || nodeDataCache[targetId].hidden) return false;
             if (
                 doEdgeCollideWithPoint(
                     graphX,
                     graphY,
-                    sourcePosition.x,
-                    sourcePosition.y,
-                    targetPosition.x,
-                    targetPosition.y,
+                    sourcePosition[0],
+                    sourcePosition[1],
+                    targetPosition[0],
+                    targetPosition[1],
                     // Adapt the edge size to the zoom ratio:
                     this.scaleSize(edgeDataCache[key].size * transformationRatio),
                 )
             ) {
                 return true;
             }
+
+            return false;
         });
 
         if (edges.length === 0) return null; // no edges found

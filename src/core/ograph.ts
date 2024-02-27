@@ -92,12 +92,12 @@ export class OGraph<
     extends OGraphEventEmitter
     implements OGraphologyInterface<TId, TConnectionWeight, TFeatures>
 {
-    public nodes: OSpacialNodes<TId, TCoordinates, TFeatures>;
-    public connections: OConnections<TId, TConnectionWeight>;
+    public nodes: OSpatialNodes<TId, TCoordinates, TFeatures>;
+    public connections: OSpatialConnections<TId, TCoordinates, TConnectionWeight>;
 
     constructor(
-        nodes: OSpacialNodes<TId, TCoordinates, TFeatures>,
-        connections: OConnections<TId, TConnectionWeight>
+        nodes: OSpatialNodes<TId, TCoordinates, TFeatures>,
+        connections: OSpatialConnections<TId, TCoordinates, TConnectionWeight>
     ) {
         super();
 
@@ -202,7 +202,18 @@ export interface ONodes<
     features: TFeatures;
 }
 
-export interface OSpacialNodes<
+export interface OSpatialConnections<
+    TId extends TypedArray,
+    TValue extends TypedArray,
+    TCoordinates extends TypedArray,
+> {
+    from: TId;
+    to: TId;
+    value: TValue;
+    zIndex: TCoordinates,
+}
+
+export interface OSpatialNodes<
     TId extends TypedArray,
     TCoordinates extends TypedArray,
     TFeatures extends TypedArray[]
