@@ -101,7 +101,7 @@ export class OGraph<
 
     public constructor(
         nodes: OSpatialNodes<TCoordinates, TFeatures>,
-        connections: OSpatialConnections<TId, TCoordinates, TConnectionWeight>
+        connections: OSpatialConnections<TId, TConnectionWeight, TCoordinates>
     ) {
         super();
 

@@ -22,6 +22,10 @@ import {
     CoordinateConversionOverride,
     TypedEventEmitter,
     MouseInteraction,
+    TColor,
+    TLabel,
+    TSize,
+    TNodeFlags,
 } from "./types";
 import {
     createElement,
@@ -181,7 +185,7 @@ export default class OSigma<
     TFeatures extends TypedArray[]
 > extends TypedEventEmitter<OsigmaEvents> {
     private settings: Settings;
-    private graph: OGraph<TId, TConnectionWeight, TCoordinates, [...TFeatures]>;
+    private graph: OGraph<TId, TConnectionWeight, TCoordinates, [...TFeatures, TColor, TLabel, TSize, TNodeFlags]>;
     private mouseCaptor: MouseCaptor;
     private touchCaptor: TouchCaptor;
     private container: HTMLElement;
@@ -234,7 +238,7 @@ export default class OSigma<
     private camera: Camera;
 
     constructor(
-        graph: OGraph<TId, TConnectionWeight, TCoordinates, TFeatures>,
+        graph: OGraph<TId, TConnectionWeight, TCoordinates, [...TFeatures, TColor, TLabel, TSize, TNodeFlags]>,
         container: HTMLElement,
         settings: Partial<Settings> = {}
     ) {
