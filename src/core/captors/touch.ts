@@ -7,7 +7,7 @@
  */
 import { CameraState, Coordinates, Dimensions, TouchCoords } from "../../types";
 import Captor, { getPosition, getTouchCoords, getTouchesArray } from "./captor";
-import osigma from "../../osigma";
+import OSigma from "../../osigma";
 
 const DRAG_TIMEOUT = 200;
 const TOUCH_INERTIA_RATIO = 3;
@@ -43,7 +43,7 @@ export default class TouchCaptor extends Captor<TouchCaptorEvents> {
     lastTouchesPositions?: Coordinates[];
     lastTouches?: Touch[];
 
-    constructor(container: HTMLElement, renderer: osigma) {
+    constructor(container: HTMLElement, renderer: OSigma) {
         super(container, renderer);
 
         // Binding methods:

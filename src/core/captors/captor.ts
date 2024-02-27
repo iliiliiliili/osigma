@@ -4,7 +4,7 @@
  * @module
  */
 import { Coordinates, MouseCoords, TouchCoords, WheelCoords, TypedEventEmitter, EventsMapping } from "../../types";
-import osigma from "../../osigma";
+import OSigma from "../../osigma";
 
 /**
  * Captor utils functions
@@ -105,9 +105,9 @@ export function getWheelDelta(e: WheelEvent): number {
  */
 export default abstract class Captor<Events extends EventsMapping> extends TypedEventEmitter<Events> {
     container: HTMLElement;
-    renderer: osigma;
+    renderer: OSigma;
 
-    constructor(container: HTMLElement, renderer: osigma) {
+    constructor(container: HTMLElement, renderer: OSigma) {
         super();
 
         // Properties

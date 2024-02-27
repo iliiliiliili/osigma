@@ -11,7 +11,7 @@ import { floatColor } from "../../../utils";
 import VERTEX_SHADER_SOURCE from "../shaders/node.image.vert.glsl";
 import FRAGMENT_SHADER_SOURCE from "../shaders/node.image.frag.glsl";
 import { NodeProgram, NodeProgramConstructor } from "./common/node";
-import osigma from "../../../osigma";
+import OSigma from "../../../osigma";
 
 // maximum size of single texture in atlas
 const MAX_TEXTURE_SIZE = 192;
@@ -220,7 +220,7 @@ export default function getNodeImageProgram(): NodeProgramConstructor {
         texture: WebGLTexture;
         latestRenderParams?: RenderParams;
 
-        constructor(gl: WebGLRenderingContext, renderer: osigma) {
+        constructor(gl: WebGLRenderingContext, renderer: OSigma) {
             super(gl, renderer);
 
             rebindTextureFns.push(() => {

@@ -4,7 +4,7 @@
  *
  * @module
  */
-import osigma from "../../../../osigma";
+import OSigma from "../../../../osigma";
 import { AbstractProgram, Program } from "./program";
 import { NodeDisplayData, EdgeDisplayData, RenderParams } from "../../../../types";
 
@@ -41,7 +41,7 @@ export abstract class EdgeProgram<Uniform extends string = string>
 }
 
 export interface EdgeProgramConstructor {
-    new(gl: WebGLRenderingContext, renderer: osigma): AbstractEdgeProgram;
+    new(gl: WebGLRenderingContext, renderer: OSigma): AbstractEdgeProgram;
 }
 
 /**
@@ -56,7 +56,7 @@ export function createEdgeCompoundProgram(programClasses: Array<EdgeProgramConst
     return class EdgeCompoundProgram implements AbstractEdgeProgram {
         programs: Array<AbstractEdgeProgram>;
 
-        constructor(gl: WebGLRenderingContext, renderer: osigma) {
+        constructor(gl: WebGLRenderingContext, renderer: OSigma) {
             this.programs = programClasses.map((Program) => {
                 return new Program(gl, renderer);
             });

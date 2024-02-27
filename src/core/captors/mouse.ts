@@ -6,7 +6,7 @@
  * @module
  */
 import { CameraState, MouseCoords, WheelCoords } from "../../types";
-import osigma from "../../osigma";
+import OSigma from "../../osigma";
 import Captor, { getWheelDelta, getMouseCoords, getPosition, getWheelCoords } from "./captor";
 
 /**
@@ -58,7 +58,7 @@ export default class MouseCaptor extends Captor<MouseCaptorEvents> {
     currentWheelDirection: -1 | 0 | 1 = 0;
     lastWheelTriggerTime?: number;
 
-    constructor(container: HTMLElement, renderer: osigma) {
+    constructor(container: HTMLElement, renderer: OSigma) {
         super(container, renderer);
 
         // Binding methods

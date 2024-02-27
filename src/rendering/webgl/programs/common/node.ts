@@ -4,7 +4,7 @@
  *
  * @module
  */
-import osigma from "../../../../osigma";
+import OSigma from "../../../../osigma";
 import { AbstractProgram, Program } from "./program";
 import { NodeDisplayData, RenderParams } from "../../../../types";
 
@@ -31,7 +31,7 @@ export abstract class NodeProgram<Uniform extends string = string>
 }
 
 export interface NodeProgramConstructor {
-    new(gl: WebGLRenderingContext, renderer: osigma): AbstractNodeProgram;
+    new(gl: WebGLRenderingContext, renderer: OSigma): AbstractNodeProgram;
 }
 
 /**
@@ -46,7 +46,7 @@ export function createNodeCompoundProgram(programClasses: Array<NodeProgramConst
     return class NodeCompoundProgram implements AbstractNodeProgram {
         programs: Array<AbstractNodeProgram>;
 
-        constructor(gl: WebGLRenderingContext, renderer: osigma) {
+        constructor(gl: WebGLRenderingContext, renderer: OSigma) {
             this.programs = programClasses.map((Program) => {
                 return new Program(gl, renderer);
             });

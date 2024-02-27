@@ -5,11 +5,23 @@
  * Various helper functions & classes used throughout the library.
  * @module
  */
-import Graph, { Attributes } from "graphology-types";
-import isGraph from "graphology-utils/is-graph";
-import { CameraState, Coordinates, Dimensions, Extent, PlainObject } from "../types";
-import { multiply, identity, scale, rotate, translate, multiplyVec2 } from "./matrices";
+import {
+    CameraState,
+    Coordinates,
+    Dimensions,
+    Extent,
+    PlainObject,
+} from "../types";
+import {
+    multiply,
+    identity,
+    scale,
+    rotate,
+    translate,
+    multiplyVec2,
+} from "./matrices";
 import { HTML_COLORS } from "./data";
+import { OGraph, TypedArray } from "../core/ograph";
 
 /**
  * Checks whether the given value is a plain object.
@@ -19,7 +31,11 @@ import { HTML_COLORS } from "./data";
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/explicit-module-boundary-types
 export function isPlainObject(value: any): boolean {
-    return typeof value === "object" && value !== null && value.constructor === Object;
+    return (
+        typeof value === "object" &&
+        value !== null &&
+        value.constructor === Object
+    );
 }
 
 /**
@@ -29,7 +45,10 @@ export function isPlainObject(value: any): boolean {
  * @param  {object} [...objects] - Objects to merge.
  * @return {object}
  */
-export function assign<T>(target: Partial<T> | undefined, ...objects: Array<Partial<T | undefined>>): T {
+export function assign<T>(
+    target: Partial<T> | undefined,
+    ...objects: Array<Partial<T | undefined>>
+): T {
     target = target || {};
 
     for (let i = 0, l = objects.length; i < l; i++) {
@@ -50,7 +69,10 @@ export function assign<T>(target: Partial<T> | undefined, ...objects: Array<Part
  * @param  {object} [...objects] - Objects to merge.
  * @return {object}
  */
-export function assignDeep<T>(target: Partial<T> | undefined, ...objects: Array<Partial<T | undefined>>): T {
+export function assignDeep<T>(
+    target: Partial<T> | undefined,
+    ...objects: Array<Partial<T | undefined>>
+): T {
     target = target || {};
 
     for (let i = 0, l = objects.length; i < l; i++) {
@@ -93,7 +115,7 @@ export const cancelFrame =
 export function createElement<T extends HTMLElement>(
     tag: string,
     style?: Partial<CSSStyleDeclaration>,
-    attributes?: PlainObject<string>,
+    attributes?: PlainObject<string>
 ): T {
     const element: T = document.createElement(tag) as T;
 
@@ -118,7 +140,8 @@ export function createElement<T extends HTMLElement>(
  * @return {number}
  */
 export function getPixelRatio(): number {
-    if (typeof window.devicePixelRatio !== "undefined") return window.devicePixelRatio;
+    if (typeof window.devicePixelRatio !== "undefined")
+        return window.devicePixelRatio;
 
     return 1;
 }
@@ -129,24 +152,32 @@ export function getPixelRatio(): number {
  * @param  {Graph}
  * @return {object}
  */
-export function graphExtent(graph: Graph): { x: Extent; y: Extent } {
-    if (!graph.order) return { x: [0, 1], y: [0, 1] };
+export function graphExtent<
+    TId extends TypedArray,
+    TConnectionWeight extends TypedArray,
+    TCoordinates extends TypedArray,
+    TFeatures extends TypedArray[]
+>(
+    graph: OGraph<TId, TConnectionWeight, TCoordinates, TFeatures>
+): { x: Extent; y: Extent } {
+    if (graph.nodeCount <= 0) return { x: [0, 1], y: [0, 1] };
 
     let xMin = Infinity;
     let xMax = -Infinity;
     let yMin = Infinity;
     let yMax = -Infinity;
 
-    graph.forEachNode((_, attr) => {
-        const { x, y } = attr;
+    for (let i = 0; i < graph.nodeCount; i++) {
+        
+        const x = graph.nodes.xCoordinates[i];
+        const y = graph.nodes.yCoordinates[i];
 
         if (x < xMin) xMin = x;
         if (x > xMax) xMax = x;
 
         if (y < yMin) yMin = y;
         if (y > yMax) yMax = y;
-    });
-
+    }
     return { x: [xMin, xMax], y: [yMin, yMax] };
 }
 
@@ -162,7 +193,10 @@ export interface NormalizationFunction {
     inverse(data: Coordinates): Coordinates;
     applyTo(data: Coordinates): void;
 }
-export function createNormalizationFunction(extent: { x: Extent; y: Extent }): NormalizationFunction {
+export function createNormalizationFunction(extent: {
+    x: Extent;
+    y: Extent;
+}): NormalizationFunction {
     const {
         x: [minX, maxX],
         y: [minY, maxY],
@@ -210,7 +244,11 @@ export function createNormalizationFunction(extent: { x: Extent; y: Extent }): N
  * @param  {array}    elements - The array to sort.
  * @return {array} - The sorted array.
  */
-export function zIndexOrdering<T>(extent: Extent, getter: (e: T) => number, elements: Array<T>): Array<T> {
+export function zIndexOrdering<T>(
+    extent: Extent,
+    getter: (e: T) => number,
+    elements: Array<T>
+): Array<T> {
     // If k is > n, we'll use a standard sort
     return elements.sort(function (a, b) {
         const zA = getter(a) || 0,
@@ -239,7 +277,8 @@ const INT32 = new Int32Array(INT8.buffer, 0, 1);
 const FLOAT32 = new Float32Array(INT8.buffer, 0, 1);
 
 const RGBA_TEST_REGEX = /^\s*rgba?\s*\(/;
-const RGBA_EXTRACT_REGEX = /^\s*rgba?\s*\(\s*([0-9]*)\s*,\s*([0-9]*)\s*,\s*([0-9]*)(?:\s*,\s*(.*)?)?\)\s*$/;
+const RGBA_EXTRACT_REGEX =
+    /^\s*rgba?\s*\(\s*([0-9]*)\s*,\s*([0-9]*)\s*,\s*([0-9]*)(?:\s*,\s*(.*)?)?\)\s*$/;
 
 type RGBAColor = { r: number; g: number; b: number; a: number };
 
@@ -298,7 +337,8 @@ export function floatArrayColor(val: string): Float32Array {
 
 export function floatColor(val: string): number {
     // If the color is already computed, we yield it
-    if (typeof FLOAT_COLOR_CACHE[val] !== "undefined") return FLOAT_COLOR_CACHE[val];
+    if (typeof FLOAT_COLOR_CACHE[val] !== "undefined")
+        return FLOAT_COLOR_CACHE[val];
 
     const parsed = parseColor(val);
     const { r, g, b } = parsed;
@@ -325,21 +365,27 @@ export function floatColor(val: string): number {
  */
 export function getCorrectionRatio(
     viewportDimensions: { width: number; height: number },
-    graphDimensions: { width: number; height: number },
+    graphDimensions: { width: number; height: number }
 ): number {
     const viewportRatio = viewportDimensions.height / viewportDimensions.width;
     const graphRatio = graphDimensions.height / graphDimensions.width;
 
     // If the stage and the graphs are in different directions (such as the graph being wider that tall while the stage
     // is taller than wide), we can stop here to have indeed nodes touching opposite sides:
-    if ((viewportRatio < 1 && graphRatio > 1) || (viewportRatio > 1 && graphRatio < 1)) {
+    if (
+        (viewportRatio < 1 && graphRatio > 1) ||
+        (viewportRatio > 1 && graphRatio < 1)
+    ) {
         return 1;
     }
 
     // Else, we need to fit the graph inside the stage:
     // 1. If the graph is "squarer" (ie. with a ratio closer to 1), we need to make the largest sides touch;
     // 2. If the stage is "squarer", we need to make the smallest sides touch.
-    return Math.min(Math.max(graphRatio, 1 / graphRatio), Math.max(1 / viewportRatio, viewportRatio));
+    return Math.min(
+        Math.max(graphRatio, 1 / graphRatio),
+        Math.max(1 / viewportRatio, viewportRatio)
+    );
 }
 
 /**
@@ -352,7 +398,7 @@ export function matrixFromCamera(
     viewportDimensions: { width: number; height: number },
     graphDimensions: { width: number; height: number },
     padding: number,
-    inverse?: boolean,
+    inverse?: boolean
 ): Float32Array {
     const { angle, ratio, x, y } = state;
 
@@ -362,7 +408,10 @@ export function matrixFromCamera(
 
     const smallestDimension = Math.min(width, height) - 2 * padding;
 
-    const correctionRatio = getCorrectionRatio(viewportDimensions, graphDimensions);
+    const correctionRatio = getCorrectionRatio(
+        viewportDimensions,
+        graphDimensions
+    );
 
     if (!inverse) {
         multiply(
@@ -370,8 +419,8 @@ export function matrixFromCamera(
             scale(
                 identity(),
                 2 * (smallestDimension / width) * correctionRatio,
-                2 * (smallestDimension / height) * correctionRatio,
-            ),
+                2 * (smallestDimension / height) * correctionRatio
+            )
         );
         multiply(matrix, rotate(identity(), -angle));
         multiply(matrix, scale(identity(), 1 / ratio));
@@ -385,8 +434,8 @@ export function matrixFromCamera(
             scale(
                 identity(),
                 width / smallestDimension / 2 / correctionRatio,
-                height / smallestDimension / 2 / correctionRatio,
-            ),
+                height / smallestDimension / 2 / correctionRatio
+            )
         );
     }
 
@@ -413,16 +462,29 @@ export function matrixFromCamera(
 export function getMatrixImpact(
     matrix: Float32Array,
     cameraState: CameraState,
-    viewportDimensions: Dimensions,
+    viewportDimensions: Dimensions
 ): number {
-    const { x, y } = multiplyVec2(matrix, { x: Math.cos(cameraState.angle), y: Math.sin(cameraState.angle) }, 0);
-    return 1 / Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2)) / viewportDimensions.width;
+    const { x, y } = multiplyVec2(
+        matrix,
+        { x: Math.cos(cameraState.angle), y: Math.sin(cameraState.angle) },
+        0
+    );
+    return (
+        1 /
+        Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2)) /
+        viewportDimensions.width
+    );
 }
 
 /**
  * Function extracting the color at the given pixel.
  */
-export function extractPixel(gl: WebGLRenderingContext, x: number, y: number, array: Uint8Array): Uint8Array {
+export function extractPixel(
+    gl: WebGLRenderingContext,
+    x: number,
+    y: number,
+    array: Uint8Array
+): Uint8Array {
     const data = array || new Uint8Array(4);
 
     gl.readPixels(x, y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, data);
@@ -434,7 +496,9 @@ export function extractPixel(gl: WebGLRenderingContext, x: number, y: number, ar
  * Function used to know whether given webgl context can use 32 bits indices.
  */
 export function canUse32BitsIndices(gl: WebGLRenderingContext): boolean {
-    const webgl2 = typeof WebGL2RenderingContext !== "undefined" && gl instanceof WebGL2RenderingContext;
+    const webgl2 =
+        typeof WebGL2RenderingContext !== "undefined" &&
+        gl instanceof WebGL2RenderingContext;
 
     return webgl2 || !!gl.getExtension("OES_element_index_uint");
 }
@@ -450,7 +514,7 @@ export function validateGraph(graph: Graph): void {
     graph.forEachNode((key: string, attributes: Attributes) => {
         if (!Number.isFinite(attributes.x) || !Number.isFinite(attributes.y)) {
             throw new Error(
-                `osigma: Coordinates of node ${key} are invalid. A node must have a numeric 'x' and 'y' attribute.`,
+                `osigma: Coordinates of node ${key} are invalid. A node must have a numeric 'x' and 'y' attribute.`
             );
         }
     });

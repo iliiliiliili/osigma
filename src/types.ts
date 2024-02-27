@@ -6,6 +6,7 @@
  * @module
  */
 import { EventEmitter } from "events";
+import { TypedArray } from "./core/ograph";
 
 /**
  * Util type to represent maps of typed elements, but implemented with
@@ -124,3 +125,8 @@ export class TypedEventEmitter<Events extends EventsMapping> extends (EventEmitt
         this.rawEmitter = this as EventEmitter;
     }
 }
+
+export type TColor = Uint8Array
+export type TLabel = Uint8Array
+export type TSize = Uint8Array
+export type TNodeFlags = Uint8Array

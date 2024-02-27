@@ -5,7 +5,7 @@
  * Class representing a single WebGL program used by osigma's WebGL renderer.
  * @module
  */
-import type osigma from "../../../../osigma";
+import type OSigma from "../../../../osigma";
 import type { RenderParams } from "../../../../types";
 import { canUse32BitsIndices } from "../../../../utils";
 import { loadVertexShader, loadFragmentShader, loadProgram } from "../../shaders/utils";
@@ -39,7 +39,7 @@ export interface ProgramDefinition<Uniform extends string = string> {
 
 export abstract class AbstractProgram {
     // eslint-disable-next-line @typescript-eslint/no-empty-function
-    constructor(_gl: WebGLRenderingContext, _renderer: osigma) { }
+    constructor(_gl: WebGLRenderingContext, _renderer: OSigma) { }
     abstract reallocate(capacity: number): void;
     abstract render(params: RenderParams): void;
 }
@@ -53,7 +53,7 @@ export abstract class Program<Uniform extends string = string> implements Abstra
     ATTRIBUTES: Array<ProgramAttributeSpecification>;
     STRIDE: number;
 
-    renderer: osigma;
+    renderer: OSigma;
     gl: WebGLRenderingContext;
     buffer: WebGLBuffer;
     array: Float32Array = new Float32Array();
@@ -72,7 +72,7 @@ export abstract class Program<Uniform extends string = string> implements Abstra
 
     abstract getDefinition(): ProgramDefinition<Uniform>;
 
-    constructor(gl: WebGLRenderingContext, renderer: osigma) {
+    constructor(gl: WebGLRenderingContext, renderer: OSigma) {
         // Reading program definition
         const definition = this.getDefinition();
 

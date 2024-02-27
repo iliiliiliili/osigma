@@ -42,7 +42,10 @@ import { AbstractNodeProgram } from "./rendering/webgl/programs/common/node";
 import { AbstractEdgeProgram } from "./rendering/webgl/programs/common/edge";
 import TouchCaptor, { FakeOsigmaMouseEvent } from "./core/captors/touch";
 import { identity, multiplyVec2 } from "./utils/matrices";
-import { doEdgeCollideWithPoint, isPixelColored } from "./utils/edge-collisions";
+import {
+    doEdgeCollideWithPoint,
+    isPixelColored,
+} from "./utils/edge-collisions";
 
 /**
  * Constants.
@@ -53,17 +56,22 @@ const Y_LABEL_MARGIN = 50;
 /**
  * Important functions.
  */
-function applyNodeDefaults(settings: Settings, key: string, data: Partial<NodeDisplayData>): NodeDisplayData {
+function applyNodeDefaults(
+    settings: Settings,
+    key: string,
+    data: Partial<NodeDisplayData>
+): NodeDisplayData {
     if (!data.hasOwnProperty("x") || !data.hasOwnProperty("y"))
         throw new Error(
-            `osigma: could not find a valid position (x, y) for node "${key}". All your nodes must have a number "x" and "y". Maybe your forgot to apply a layout or your "nodeReducer" is not returning the correct data?`,
+            `osigma: could not find a valid position (x, y) for node "${key}". All your nodes must have a number "x" and "y". Maybe your forgot to apply a layout or your "nodeReducer" is not returning the correct data?`
         );
 
     if (!data.color) data.color = settings.defaultNodeColor;
 
     if (!data.label && data.label !== "") data.label = null;
 
-    if (data.label !== undefined && data.label !== null) data.label = "" + data.label;
+    if (data.label !== undefined && data.label !== null)
+        data.label = "" + data.label;
     else data.label = null;
 
     if (!data.size) data.size = 2;
@@ -81,7 +89,11 @@ function applyNodeDefaults(settings: Settings, key: string, data: Partial<NodeDi
     return data as NodeDisplayData;
 }
 
-function applyEdgeDefaults(settings: Settings, key: string, data: Partial<EdgeDisplayData>): EdgeDisplayData {
+function applyEdgeDefaults(
+    settings: Settings,
+    key: string,
+    data: Partial<EdgeDisplayData>
+): EdgeDisplayData {
     if (!data.color) data.color = settings.defaultEdgeColor;
 
     if (!data.label) data.label = "";
@@ -107,7 +119,7 @@ export interface OsigmaEventPayload {
     preventOsigmaDefault(): void;
 }
 
-export interface OsigmaStageEventPayload extends OsigmaEventPayload { }
+export interface OsigmaStageEventPayload extends OsigmaEventPayload {}
 export interface OsigmaNodeEventPayload extends OsigmaEventPayload {
     node: number;
 }
@@ -116,15 +128,21 @@ export interface OsigmaEdgeEventPayload extends OsigmaEventPayload {
 }
 
 export type OsigmaStageEvents = {
-    [E in MouseInteraction as `${E}Stage`]: (payload: OsigmaStageEventPayload) => void;
+    [E in MouseInteraction as `${E}Stage`]: (
+        payload: OsigmaStageEventPayload
+    ) => void;
 };
 
 export type OsigmaNodeEvents = {
-    [E in MouseInteraction as `${E}Node`]: (payload: OsigmaNodeEventPayload) => void;
+    [E in MouseInteraction as `${E}Node`]: (
+        payload: OsigmaNodeEventPayload
+    ) => void;
 };
 
 export type OsigmaEdgeEvents = {
-    [E in MouseInteraction as `${E}Edge`]: (payload: OsigmaEdgeEventPayload) => void;
+    [E in MouseInteraction as `${E}Edge`]: (
+        payload: OsigmaEdgeEventPayload
+    ) => void;
 };
 
 export type OsigmaAdditionalEvents = {
@@ -143,7 +161,10 @@ export type OsigmaAdditionalEvents = {
     leaveEdge(payload: OsigmaEdgeEventPayload): void;
 };
 
-export type OsigmaEvents = OsigmaStageEvents & OsigmaNodeEvents & OsigmaEdgeEvents & OsigmaAdditionalEvents;
+export type OsigmaEvents = OsigmaStageEvents &
+    OsigmaNodeEvents &
+    OsigmaEdgeEvents &
+    OsigmaAdditionalEvents;
 
 /**
  * Main class.
@@ -153,9 +174,14 @@ export type OsigmaEvents = OsigmaStageEvents & OsigmaNodeEvents & OsigmaEdgeEven
  * @param {HTMLElement} container - DOM container in which to render.
  * @param {object}      settings  - Optional settings.
  */
-export default class osigma<TId extends TypedArray, TConnectionWeight extends TypedArray, TCoordinates extends TypedArray, TFeatures extends TypedArray[]> extends TypedEventEmitter<OsigmaEvents> {
+export default class OSigma<
+    TId extends TypedArray,
+    TConnectionWeight extends TypedArray,
+    TCoordinates extends TypedArray,
+    TFeatures extends TypedArray[]
+> extends TypedEventEmitter<OsigmaEvents> {
     private settings: Settings;
-    private graph: OGraph<TId, TConnectionWeight, TCoordinates, TFeatures>;
+    private graph: OGraph<TId, TConnectionWeight, TCoordinates, [...TFeatures]>;
     private mouseCaptor: MouseCaptor;
     private touchCaptor: TouchCaptor;
     private container: HTMLElement;
@@ -175,10 +201,11 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
     private invMatrix: Float32Array = identity();
     private correctionRatio = 1;
     private customBBox: { x: Extent; y: Extent } | null = null;
-    private normalizationFunction: NormalizationFunction = createNormalizationFunction({
-        x: [0, 1],
-        y: [0, 1],
-    });
+    private normalizationFunction: NormalizationFunction =
+        createNormalizationFunction({
+            x: [0, 1],
+            y: [0, 1],
+        });
 
     // Cache:
     private graphToViewportRatio = 1;
@@ -192,8 +219,8 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
     private displayedNodeLabels: Set<string> = new Set();
     private displayedEdgeLabels: Set<string> = new Set();
     private highlightedNodes: Set<string> = new Set();
-    private hoveredNode: string | null = null;
-    private hoveredEdge: string | null = null;
+    private hoveredNode: number | null = null;
+    private hoveredEdge: number | null = null;
     private renderFrame: number | null = null;
     private renderHighlightedNodesFrame: number | null = null;
     private needToProcess = false;
@@ -206,7 +233,11 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
 
     private camera: Camera;
 
-    constructor(graph: OGraph<TId, TConnectionWeight, TCoordinates, TFeatures>, container: HTMLElement, settings: Partial<Settings> = {}) {
+    constructor(
+        graph: OGraph<TId, TConnectionWeight, TCoordinates, TFeatures>,
+        container: HTMLElement,
+        settings: Partial<Settings> = {}
+    ) {
         super();
 
         // Resolving settings
@@ -214,7 +245,8 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
 
         // Validating
         validateSettings(this.settings);
-        if (!(container instanceof HTMLElement)) throw new Error("osigma: container should be an html element.");
+        if (!(container instanceof HTMLElement))
+            throw new Error("osigma: container should be an html element.");
 
         // Properties
         this.graph = graph;
@@ -240,18 +272,27 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
         // Loading programs
         for (const type in this.settings.nodeProgramClasses) {
             const NodeProgramClass = this.settings.nodeProgramClasses[type];
-            this.nodePrograms[type] = new NodeProgramClass(this.webGLContexts.nodes, this);
+            this.nodePrograms[type] = new NodeProgramClass(
+                this.webGLContexts.nodes,
+                this
+            );
 
             let NodeHoverProgram = NodeProgramClass;
             if (type in this.settings.nodeHoverProgramClasses) {
                 NodeHoverProgram = this.settings.nodeHoverProgramClasses[type];
             }
 
-            this.nodeHoverPrograms[type] = new NodeHoverProgram(this.webGLContexts.hoverNodes, this);
+            this.nodeHoverPrograms[type] = new NodeHoverProgram(
+                this.webGLContexts.hoverNodes,
+                this
+            );
         }
         for (const type in this.settings.edgeProgramClasses) {
             const EdgeProgramClass = this.settings.edgeProgramClasses[type];
-            this.edgePrograms[type] = new EdgeProgramClass(this.webGLContexts.edges, this);
+            this.edgePrograms[type] = new EdgeProgramClass(
+                this.webGLContexts.edges,
+                this
+            );
         }
 
         // Initial resize
@@ -288,7 +329,7 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
     /**
      * Internal function used to create a canvas element.
      * @param  {string} id - Context's id.
-     * @return {osigma}
+     * @return {OSigma}
      */
     private createCanvas(id: string): HTMLCanvasElement {
         const canvas: HTMLCanvasElement = createElement<HTMLCanvasElement>(
@@ -298,7 +339,7 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
             },
             {
                 class: `osigma-${id}`,
-            },
+            }
         );
 
         this.elements[id] = canvas;
@@ -312,7 +353,7 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
      * DOM elements.
      *
      * @param  {string} id - Context's id.
-     * @return {osigma}
+     * @return {OSigma}
      */
     private createCanvasContext(id: string): this {
         const canvas = this.createCanvas(id);
@@ -322,7 +363,10 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
             antialias: false,
         };
 
-        this.canvasContexts[id] = canvas.getContext("2d", contextOptions) as CanvasRenderingContext2D;
+        this.canvasContexts[id] = canvas.getContext(
+            "2d",
+            contextOptions
+        ) as CanvasRenderingContext2D;
 
         return this;
     }
@@ -333,9 +377,12 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
      *
      * @param  {string}  id      - Context's id.
      * @param  {object?} options - #getContext params to override (optional)
-     * @return {osigma}
+     * @return {OSigma}
      */
-    private createWebGLContext(id: string, options?: { preserveDrawingBuffer?: boolean; antialias?: boolean }): this {
+    private createWebGLContext(
+        id: string,
+        options?: { preserveDrawingBuffer?: boolean; antialias?: boolean }
+    ): this {
         const canvas = this.createCanvas(id);
 
         const contextOptions = {
@@ -353,7 +400,8 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
         if (!context) context = canvas.getContext("webgl", contextOptions);
 
         // Edge, I am looking right at you...
-        if (!context) context = canvas.getContext("experimental-webgl", contextOptions);
+        if (!context)
+            context = canvas.getContext("experimental-webgl", contextOptions);
 
         this.webGLContexts[id] = context as WebGLRenderingContext;
 
@@ -363,7 +411,7 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
     /**
      * Method binding camera handlers.
      *
-     * @return {osigma}
+     * @return {OSigma}
      */
     private bindCameraHandlers(): this {
         this.activeListeners.camera = () => {
@@ -378,7 +426,7 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
     /**
      * Method unbinding camera handlers.
      *
-     * @return {osigma}
+     * @return {OSigma}
      */
     private unbindCameraHandlers(): this {
         this.camera.removeListener("updated", this.activeListeners.camera);
@@ -388,7 +436,11 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
     /**
      * Method that checks whether or not a node collides with a given position.
      */
-    private mouseIsOnNode({ x, y }: Coordinates, { x: nodeX, y: nodeY }: Coordinates, size: number): boolean {
+    private mouseIsOnNode(
+        { x, y }: Coordinates,
+        { x: nodeX, y: nodeY }: Coordinates,
+        size: number
+    ): boolean {
         return (
             x > nodeX - size &&
             x < nodeX + size &&
@@ -401,16 +453,19 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
     /**
      * Method that returns all nodes in quad at a given position.
      */
-    private getQuadNodes(position: Coordinates): string[] {
+    private getQuadNodes(position: Coordinates): number[] {
         const mouseGraphPosition = this.viewportToFramedGraph(position);
 
-        return this.quadtree.point(mouseGraphPosition.x, 1 - mouseGraphPosition.y);
+        return this.quadtree.point(
+            mouseGraphPosition.x,
+            1 - mouseGraphPosition.y
+        );
     }
 
     /**
      * Method that returns the closest node to a given position.
      */
-    private getNodeAtPosition(position: Coordinates): string | null {
+    private getNodeAtPosition(position: Coordinates): number | null {
         const { x, y } = position;
         const quadNodes = this.getQuadNodes(position);
 
@@ -427,8 +482,14 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
 
             const size = this.scaleSize(data.size);
 
-            if (!data.hidden && this.mouseIsOnNode(position, nodePosition, size)) {
-                const distance = Math.sqrt(Math.pow(x - nodePosition.x, 2) + Math.pow(y - nodePosition.y, 2));
+            if (
+                !data.hidden &&
+                this.mouseIsOnNode(position, nodePosition, size)
+            ) {
+                const distance = Math.sqrt(
+                    Math.pow(x - nodePosition.x, 2) +
+                        Math.pow(y - nodePosition.y, 2)
+                );
 
                 // TODO: sort by min size also for cases where center is the same
                 if (distance < minDistance) {
@@ -444,7 +505,7 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
     /**
      * Method binding event handlers.
      *
-     * @return {osigma}
+     * @return {OSigma}
      */
     private bindEventHandlers(): this {
         // Handling window resize
@@ -465,9 +526,17 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
 
             const nodeToHover = this.getNodeAtPosition(e);
 
-            if (nodeToHover && this.hoveredNode !== nodeToHover && !this.nodeDataCache[nodeToHover].hidden) {
+            if (
+                nodeToHover &&
+                this.hoveredNode !== nodeToHover &&
+                !this.nodeDataCache[nodeToHover].hidden
+            ) {
                 // Handling passing from one node to the other directly
-                if (this.hoveredNode) this.emit("leaveNode", { ...baseEvent, node: this.hoveredNode });
+                if (this.hoveredNode)
+                    this.emit("leaveNode", {
+                        ...baseEvent,
+                        node: this.hoveredNode,
+                    });
 
                 this.hoveredNode = nodeToHover;
                 this.emit("enterNode", { ...baseEvent, node: nodeToHover });
@@ -505,7 +574,9 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
         };
 
         // Handling click
-        const createMouseListener = (eventType: MouseInteraction): ((e: MouseCoords) => void) => {
+        const createMouseListener = (
+            eventType: MouseInteraction
+        ): ((e: MouseCoords) => void) => {
             return (e) => {
                 const baseEvent = {
                     event: e,
@@ -514,8 +585,12 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
                     },
                 };
 
-                const isFakeOsigmaMouseEvent = (e.original as FakeOsigmaMouseEvent).isFakeOsigmaMouseEvent;
-                const nodeAtPosition = isFakeOsigmaMouseEvent ? this.getNodeAtPosition(e) : this.hoveredNode;
+                const isFakeOsigmaMouseEvent = (
+                    e.original as FakeOsigmaMouseEvent
+                ).isFakeOsigmaMouseEvent;
+                const nodeAtPosition = isFakeOsigmaMouseEvent
+                    ? this.getNodeAtPosition(e)
+                    : this.hoveredNode;
 
                 if (nodeAtPosition)
                     return this.emit(`${eventType}Node`, {
@@ -523,9 +598,17 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
                         node: nodeAtPosition,
                     });
 
-                if (eventType === "wheel" ? this.settings.enableEdgeWheelEvents : this.settings.enableEdgeClickEvents) {
+                if (
+                    eventType === "wheel"
+                        ? this.settings.enableEdgeWheelEvents
+                        : this.settings.enableEdgeClickEvents
+                ) {
                     const edge = this.getEdgeAtPoint(e.x, e.y);
-                    if (edge) return this.emit(`${eventType}Edge`, { ...baseEvent, edge });
+                    if (edge)
+                        return this.emit(`${eventType}Edge`, {
+                            ...baseEvent,
+                            edge,
+                        });
                 }
 
                 return this.emit(`${eventType}Stage`, baseEvent);
@@ -533,15 +616,23 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
         };
 
         this.activeListeners.handleClick = createMouseListener("click");
-        this.activeListeners.handleRightClick = createMouseListener("rightClick");
-        this.activeListeners.handleDoubleClick = createMouseListener("doubleClick");
+        this.activeListeners.handleRightClick =
+            createMouseListener("rightClick");
+        this.activeListeners.handleDoubleClick =
+            createMouseListener("doubleClick");
         this.activeListeners.handleWheel = createMouseListener("wheel");
         this.activeListeners.handleDown = createMouseListener("down");
 
         this.mouseCaptor.on("mousemove", this.activeListeners.handleMove);
         this.mouseCaptor.on("click", this.activeListeners.handleClick);
-        this.mouseCaptor.on("rightClick", this.activeListeners.handleRightClick);
-        this.mouseCaptor.on("doubleClick", this.activeListeners.handleDoubleClick);
+        this.mouseCaptor.on(
+            "rightClick",
+            this.activeListeners.handleRightClick
+        );
+        this.mouseCaptor.on(
+            "doubleClick",
+            this.activeListeners.handleDoubleClick
+        );
         this.mouseCaptor.on("wheel", this.activeListeners.handleWheel);
         this.mouseCaptor.on("mousedown", this.activeListeners.handleDown);
 
@@ -554,7 +645,7 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
     /**
      * Method binding graph handlers
      *
-     * @return {osigma}
+     * @return {OSigma}
      */
     private bindGraphHandlers(): this {
         const graph = this.graph;
@@ -563,7 +654,9 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
             this.scheduleRefresh();
         };
 
-        this.activeListeners.dropNodeGraphUpdate = (e: { key: string }): void => {
+        this.activeListeners.dropNodeGraphUpdate = (e: {
+            key: number;
+        }): void => {
             delete this.nodeDataCache[e.key];
 
             if (this.hoveredNode === e.key) this.hoveredNode = null;
@@ -571,7 +664,9 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
             this.activeListeners.graphUpdate();
         };
 
-        this.activeListeners.dropEdgeGraphUpdate = (e: { key: string }): void => {
+        this.activeListeners.dropEdgeGraphUpdate = (e: {
+            key: number;
+        }): void => {
             delete this.edgeDataCache[e.key];
 
             if (this.hoveredEdge === e.key) this.hoveredEdge = null;
@@ -616,28 +711,53 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
         const graph = this.graph;
 
         graph.removeListener("nodeAdded", this.activeListeners.graphUpdate);
-        graph.removeListener("nodeDropped", this.activeListeners.dropNodeGraphUpdate);
-        graph.removeListener("nodeAttributesUpdated", this.activeListeners.graphUpdate);
-        graph.removeListener("eachNodeAttributesUpdated", this.activeListeners.graphUpdate);
+        graph.removeListener(
+            "nodeDropped",
+            this.activeListeners.dropNodeGraphUpdate
+        );
+        graph.removeListener(
+            "nodeAttributesUpdated",
+            this.activeListeners.graphUpdate
+        );
+        graph.removeListener(
+            "eachNodeAttributesUpdated",
+            this.activeListeners.graphUpdate
+        );
         graph.removeListener("edgeAdded", this.activeListeners.graphUpdate);
-        graph.removeListener("edgeDropped", this.activeListeners.dropEdgeGraphUpdate);
-        graph.removeListener("edgeAttributesUpdated", this.activeListeners.graphUpdate);
-        graph.removeListener("eachEdgeAttributesUpdated", this.activeListeners.graphUpdate);
-        graph.removeListener("edgesCleared", this.activeListeners.clearEdgesGraphUpdate);
+        graph.removeListener(
+            "edgeDropped",
+            this.activeListeners.dropEdgeGraphUpdate
+        );
+        graph.removeListener(
+            "edgeAttributesUpdated",
+            this.activeListeners.graphUpdate
+        );
+        graph.removeListener(
+            "eachEdgeAttributesUpdated",
+            this.activeListeners.graphUpdate
+        );
+        graph.removeListener(
+            "edgesCleared",
+            this.activeListeners.clearEdgesGraphUpdate
+        );
         graph.removeListener("cleared", this.activeListeners.clearGraphUpdate);
     }
 
     /**
      * Method dealing with "leaveEdge" and "enterEdge" events.
      *
-     * @return {osigma}
+     * @return {OSigma}
      */
     private checkEdgeHoverEvents(payload: OsigmaEventPayload): this {
-        const edgeToHover = this.hoveredNode ? null : this.getEdgeAtPoint(payload.event.x, payload.event.y);
+        const edgeToHover = this.hoveredNode
+            ? null
+            : this.getEdgeAtPoint(payload.event.x, payload.event.y);
 
         if (edgeToHover !== this.hoveredEdge) {
-            if (this.hoveredEdge) this.emit("leaveEdge", { ...payload, edge: this.hoveredEdge });
-            if (edgeToHover) this.emit("enterEdge", { ...payload, edge: edgeToHover });
+            if (this.hoveredEdge)
+                this.emit("leaveEdge", { ...payload, edge: this.hoveredEdge });
+            if (edgeToHover)
+                this.emit("enterEdge", { ...payload, edge: edgeToHover });
             this.hoveredEdge = edgeToHover;
         }
 
@@ -654,7 +774,14 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
         // Check first that pixel is colored:
         // Note that mouse positions must be corrected by pixel ratio to correctly
         // index the drawing buffer.
-        if (!isPixelColored(this.webGLContexts.edges, x * this.pixelRatio, y * this.pixelRatio)) return null;
+        if (
+            !isPixelColored(
+                this.webGLContexts.edges,
+                x * this.pixelRatio,
+                y * this.pixelRatio
+            )
+        )
+            return null;
 
         // Check for each edge if it collides with the point:
         const { x: graphX, y: graphY } = this.viewportToGraph({ x, y });
@@ -663,45 +790,71 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
         // the length of a non-null edge is transformed to between the graph system
         // and the viewport system:
         let transformationRatio = 0;
-        this.graph.someEdge((key, _, sourceId, targetId, [xs, ys], [xt, yt]) => {
-            if (edgeDataCache[key].hidden || nodeDataCache[sourceId].hidden || nodeDataCache[targetId].hidden) return false;
+        this.graph.someEdge(
+            (key, _, sourceId, targetId, [xs, ys], [xt, yt]) => {
+                if (
+                    edgeDataCache[key].hidden ||
+                    nodeDataCache[sourceId].hidden ||
+                    nodeDataCache[targetId].hidden
+                )
+                    return false;
 
-            if (xs !== xt || ys !== yt) {
-                const graphLength = Math.sqrt(Math.pow(xt - xs, 2) + Math.pow(yt - ys, 2));
+                if (xs !== xt || ys !== yt) {
+                    const graphLength = Math.sqrt(
+                        Math.pow(xt - xs, 2) + Math.pow(yt - ys, 2)
+                    );
 
-                const { x: vp_xs, y: vp_ys } = this.graphToViewport({ x: xs, y: ys });
-                const { x: vp_xt, y: vp_yt } = this.graphToViewport({ x: xt, y: yt });
-                const viewportLength = Math.sqrt(Math.pow(vp_xt - vp_xs, 2) + Math.pow(vp_yt - vp_ys, 2));
+                    const { x: vp_xs, y: vp_ys } = this.graphToViewport({
+                        x: xs,
+                        y: ys,
+                    });
+                    const { x: vp_xt, y: vp_yt } = this.graphToViewport({
+                        x: xt,
+                        y: yt,
+                    });
+                    const viewportLength = Math.sqrt(
+                        Math.pow(vp_xt - vp_xs, 2) + Math.pow(vp_yt - vp_ys, 2)
+                    );
 
-                transformationRatio = graphLength / viewportLength;
-                return true;
+                    transformationRatio = graphLength / viewportLength;
+                    return true;
+                }
+
+                return false;
             }
-
-            return false;
-        });
+        );
         // If no non-null edge has been found, return null:
         if (!transformationRatio) return null;
 
         // Now we can look for matching edges:
-        const edges = this.graph.filterEdges((key, _, sourceId, targetId, sourcePosition, targetPosition) => {
-            if (edgeDataCache[key].hidden || nodeDataCache[sourceId].hidden || nodeDataCache[targetId].hidden) return false;
-            if (
-                doEdgeCollideWithPoint(
-                    graphX,
-                    graphY,
-                    sourcePosition[0],
-                    sourcePosition[1],
-                    targetPosition[0],
-                    targetPosition[1],
-                    // Adapt the edge size to the zoom ratio:
-                    this.scaleSize(edgeDataCache[key].size * transformationRatio),
+        const edges = this.graph.filterEdges(
+            (key, _, sourceId, targetId, sourcePosition, targetPosition) => {
+                if (
+                    edgeDataCache[key].hidden ||
+                    nodeDataCache[sourceId].hidden ||
+                    nodeDataCache[targetId].hidden
                 )
-            ) {
-                return true;
-            }
+                    return false;
+                if (
+                    doEdgeCollideWithPoint(
+                        graphX,
+                        graphY,
+                        sourcePosition[0],
+                        sourcePosition[1],
+                        targetPosition[0],
+                        targetPosition[1],
+                        // Adapt the edge size to the zoom ratio:
+                        this.scaleSize(
+                            edgeDataCache[key].size * transformationRatio
+                        )
+                    )
+                ) {
+                    return true;
+                }
 
-            return false;
-        });
+                return false;
+            }
+        );
 
         if (edges.length === 0) return null; // no edges found
 
@@ -724,7 +877,7 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
     /**
      * Method used to process the whole graph's data.
      *
-     * @return {osigma}
+     * @return {OSigma}
      */
     private process(): this {
         const graph = this.graph;
@@ -758,34 +911,33 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
             nullCamera.getState(),
             this.getDimensions(),
             this.getGraphDimensions(),
-            this.getSetting("stagePadding") || 0,
+            this.getSetting("stagePadding") || 0
         );
 
         // Rescaling function
-        this.normalizationFunction = createNormalizationFunction(this.customBBox || this.nodeExtent);
+        this.normalizationFunction = createNormalizationFunction(
+            this.customBBox || this.nodeExtent
+        );
 
         const nodesPerPrograms: Record<string, number> = {};
 
-        let nodes = graph.nodes();
-
-        for (let i = 0, l = nodes.length; i < l; i++) {
-            const node = nodes[i];
-
+        for (let i = 0, l = this.graph.nodeCount; i < l; i++) {
             // Node display data resolution:
             //   1. First we get the node's attributes
-            //   2. We optionally reduce them using the function provided by the user
+            //   // 2. We optionally reduce them using the function provided by the user
             //      Note that this function must return a total object and won't be merged
             //   3. We apply our defaults, while running some vital checks
             //   4. We apply the normalization function
 
             // We shallow copy node data to avoid dangerous behaviors from reducers
-            let attr = Object.assign({}, graph.getNodeAttributes(node));
+            // let attr = Object.assign({}, graph.getNodeAttributes(node));
 
-            if (settings.nodeReducer) attr = settings.nodeReducer(node, attr);
+            // if (settings.nodeReducer) attr = settings.nodeReducer(node, attr);
 
             const data = applyNodeDefaults(this.settings, node, attr);
 
-            nodesPerPrograms[data.type] = (nodesPerPrograms[data.type] || 0) + 1;
+            nodesPerPrograms[data.type] =
+                (nodesPerPrograms[data.type] || 0) + 1;
             this.nodeDataCache[node] = data;
 
             this.normalizationFunction.applyTo(data);
@@ -800,7 +952,9 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
 
         for (const type in this.nodePrograms) {
             if (!this.nodePrograms.hasOwnProperty(type)) {
-                throw new Error(`osigma: could not find a suitable program for node type "${type}"!`);
+                throw new Error(
+                    `osigma: could not find a suitable program for node type "${type}"!`
+                );
             }
 
             this.nodePrograms[type].reallocate(nodesPerPrograms[type] || 0);
@@ -811,24 +965,43 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
         // Handling node z-index
         // TODO: z-index needs us to compute display data before hand
         if (this.settings.zIndex && nodeZExtent[0] !== nodeZExtent[1])
-            nodes = zIndexOrdering<string>(nodeZExtent, (node: string): number => this.nodeDataCache[node].zIndex, nodes);
+            nodes = zIndexOrdering<string>(
+                nodeZExtent,
+                (node: string): number => this.nodeDataCache[node].zIndex,
+                nodes
+            );
 
         const normalizationRatio = this.normalizationFunction.ratio;
         for (let i = 0, l = nodes.length; i < l; i++) {
             const node = nodes[i];
             const data = this.nodeDataCache[node];
 
-            this.quadtree.add(node, data.x, 1 - data.y, this.scaleSize(data.size, 1) / normalizationRatio);
+            this.quadtree.add(
+                node,
+                data.x,
+                1 - data.y,
+                this.scaleSize(data.size, 1) / normalizationRatio
+            );
 
             if (typeof data.label === "string" && !data.hidden)
-                this.labelGrid.add(node, data.size, this.framedGraphToViewport(data, { matrix: nullCameraMatrix }));
+                this.labelGrid.add(
+                    node,
+                    data.size,
+                    this.framedGraphToViewport(data, {
+                        matrix: nullCameraMatrix,
+                    })
+                );
 
             const nodeProgram = this.nodePrograms[data.type];
-            if (!nodeProgram) throw new Error(`osigma: could not find a suitable program for node type "${data.type}"!`);
+            if (!nodeProgram)
+                throw new Error(
+                    `osigma: could not find a suitable program for node type "${data.type}"!`
+                );
             nodeProgram.process(nodesPerPrograms[data.type]++, data);
 
             // Save the node in the highlighted set if needed
-            if (data.highlighted && !data.hidden) this.highlightedNodes.add(node);
+            if (data.highlighted && !data.hidden)
+                this.highlightedNodes.add(node);
         }
 
         this.labelGrid.organize();
@@ -853,10 +1026,12 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
 
             const data = applyEdgeDefaults(this.settings, edge, attr);
 
-            edgesPerPrograms[data.type] = (edgesPerPrograms[data.type] || 0) + 1;
+            edgesPerPrograms[data.type] =
+                (edgesPerPrograms[data.type] || 0) + 1;
             this.edgeDataCache[edge] = data;
 
-            if (data.forceLabel && !data.hidden) this.edgesWithForcedLabels.push(edge);
+            if (data.forceLabel && !data.hidden)
+                this.edgesWithForcedLabels.push(edge);
 
             if (this.settings.zIndex) {
                 if (data.zIndex < edgeZExtent[0]) edgeZExtent[0] = data.zIndex;
@@ -866,7 +1041,9 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
 
         for (const type in this.edgePrograms) {
             if (!this.edgePrograms.hasOwnProperty(type)) {
-                throw new Error(`osigma: could not find a suitable program for edge type "${type}"!`);
+                throw new Error(
+                    `osigma: could not find a suitable program for edge type "${type}"!`
+                );
             }
 
             this.edgePrograms[type].reallocate(edgesPerPrograms[type] || 0);
@@ -876,7 +1053,11 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
 
         // Handling edge z-index
         if (this.settings.zIndex && edgeZExtent[0] !== edgeZExtent[1])
-            edges = zIndexOrdering(edgeZExtent, (edge: string): number => this.edgeDataCache[edge].zIndex, edges);
+            edges = zIndexOrdering(
+                edgeZExtent,
+                (edge: string): number => this.edgeDataCache[edge].zIndex,
+                edges
+            );
 
         for (let i = 0, l = edges.length; i < l; i++) {
             const edge = edges[i];
@@ -886,7 +1067,12 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
                 sourceData = this.nodeDataCache[extremities[0]],
                 targetData = this.nodeDataCache[extremities[1]];
 
-            this.edgePrograms[data.type].process(edgesPerPrograms[data.type]++, sourceData, targetData, data);
+            this.edgePrograms[data.type].process(
+                edgesPerPrograms[data.type]++,
+                sourceData,
+                targetData,
+                data
+            );
         }
 
         return this;
@@ -907,7 +1093,7 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
     /**
      * Method used to render labels.
      *
-     * @return {osigma}
+     * @return {OSigma}
      */
     private renderLabels(): this {
         if (!this.settings.renderLabels) return this;
@@ -915,7 +1101,10 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
         const cameraState = this.camera.getState();
 
         // Selecting labels to draw
-        const labelsToDisplay = this.labelGrid.getLabelsToDisplay(cameraState.ratio, this.settings.labelDensity);
+        const labelsToDisplay = this.labelGrid.getLabelsToDisplay(
+            cameraState.ratio,
+            this.settings.labelDensity
+        );
         extend(labelsToDisplay, this.nodesWithForcedLabels);
 
         this.displayedNodeLabels = new Set();
@@ -941,7 +1130,11 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
             const size = this.scaleSize(data.size);
 
             // Is node big enough?
-            if (!data.forceLabel && size < this.settings.labelRenderedSizeThreshold) continue;
+            if (
+                !data.forceLabel &&
+                size < this.settings.labelRenderedSizeThreshold
+            )
+                continue;
 
             // Is node actually on screen (with some margin)
             // NOTE: we used to rely on the quadtree for this, but the coordinates
@@ -976,7 +1169,7 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
                     x,
                     y,
                 },
-                this.settings,
+                this.settings
             );
         }
 
@@ -987,7 +1180,7 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
      * Method used to render edge labels, based on which node labels were
      * rendered.
      *
-     * @return {osigma}
+     * @return {OSigma}
      */
     private renderEdgeLabels(): this {
         if (!this.settings.renderEdgeLabels) return this;
@@ -1041,7 +1234,7 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
                     ...this.framedGraphToViewport(targetData),
                     size: this.scaleSize(targetData.size),
                 },
-                this.settings,
+                this.settings
             );
             displayedLabels.add(edge);
         }
@@ -1054,7 +1247,7 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
     /**
      * Method used to render the highlighted nodes.
      *
-     * @return {osigma}
+     * @return {OSigma}
      */
     private renderHighlightedNodes(): void {
         const context = this.canvasContexts.hovers;
@@ -1079,7 +1272,7 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
                     x,
                     y,
                 },
-                this.settings,
+                this.settings
             );
         };
 
@@ -1107,17 +1300,24 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
         });
         // 2. Allocate for each type for the proper number of nodes
         for (const type in this.nodeHoverPrograms) {
-            this.nodeHoverPrograms[type].reallocate(nodesPerPrograms[type] || 0);
+            this.nodeHoverPrograms[type].reallocate(
+                nodesPerPrograms[type] || 0
+            );
             // Also reset count, to use when rendering:
             nodesPerPrograms[type] = 0;
         }
         // 3. Process all nodes to render:
         nodesToRender.forEach((node) => {
             const data = this.nodeDataCache[node];
-            this.nodeHoverPrograms[data.type].process(nodesPerPrograms[data.type]++, data);
+            this.nodeHoverPrograms[data.type].process(
+                nodesPerPrograms[data.type]++,
+                data
+            );
         });
         // 4. Clear hovered nodes layer:
-        this.webGLContexts.hoverNodes.clear(this.webGLContexts.hoverNodes.COLOR_BUFFER_BIT);
+        this.webGLContexts.hoverNodes.clear(
+            this.webGLContexts.hoverNodes.COLOR_BUFFER_BIT
+        );
         // 5. Render:
         for (const type in this.nodeHoverPrograms) {
             const program = this.nodeHoverPrograms[type];
@@ -1154,7 +1354,7 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
     /**
      * Method used to render.
      *
-     * @return {osigma}
+     * @return {OSigma}
      */
     private render(): this {
         this.emit("beforeRender");
@@ -1197,9 +1397,24 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
         const viewportDimensions = this.getDimensions();
         const graphDimensions = this.getGraphDimensions();
         const padding = this.getSetting("stagePadding") || 0;
-        this.matrix = matrixFromCamera(cameraState, viewportDimensions, graphDimensions, padding);
-        this.invMatrix = matrixFromCamera(cameraState, viewportDimensions, graphDimensions, padding, true);
-        this.correctionRatio = getMatrixImpact(this.matrix, cameraState, viewportDimensions);
+        this.matrix = matrixFromCamera(
+            cameraState,
+            viewportDimensions,
+            graphDimensions,
+            padding
+        );
+        this.invMatrix = matrixFromCamera(
+            cameraState,
+            viewportDimensions,
+            graphDimensions,
+            padding,
+            true
+        );
+        this.correctionRatio = getMatrixImpact(
+            this.matrix,
+            cameraState,
+            viewportDimensions
+        );
         this.graphToViewportRatio = this.getGraphToViewportRatio();
 
         // [jacomyal]
@@ -1266,7 +1481,7 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
      * Method setting the renderer's camera.
      *
      * @param  {Camera} camera - New camera.
-     * @return {osigma}
+     * @return {OSigma}
      */
     setCamera(camera: Camera): void {
         this.unbindCameraHandlers();
@@ -1440,7 +1655,7 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
      *
      * @param  {string} key - The setting key to set.
      * @param  {any}    value - The value to set.
-     * @return {osigma}
+     * @return {OSigma}
      */
     setSetting<K extends keyof Settings>(key: K, value: Settings[K]): this {
         this.settings[key] = value;
@@ -1456,9 +1671,12 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
      *
      * @param  {string}   key     - The setting key to set.
      * @param  {function} updater - The update function.
-     * @return {osigma}
+     * @return {OSigma}
      */
-    updateSetting<K extends keyof Settings>(key: K, updater: (value: Settings[K]) => Settings[K]): this {
+    updateSetting<K extends keyof Settings>(
+        key: K,
+        updater: (value: Settings[K]) => Settings[K]
+    ): this {
         this.settings[key] = updater(this.settings[key]);
         validateSettings(this.settings);
         this.handleSettingsUpdate();
@@ -1469,7 +1687,7 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
     /**
      * Method used to resize the renderer.
      *
-     * @return {osigma}
+     * @return {OSigma}
      */
     resize(): this {
         const previousWidth = this.width,
@@ -1483,7 +1701,7 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
             if (this.settings.allowInvalidContainer) this.width = 1;
             else
                 throw new Error(
-                    "osigma: Container has no width. You can set the allowInvalidContainer setting to true to stop seeing this error.",
+                    "osigma: Container has no width. You can set the allowInvalidContainer setting to true to stop seeing this error."
                 );
         }
 
@@ -1491,12 +1709,13 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
             if (this.settings.allowInvalidContainer) this.height = 1;
             else
                 throw new Error(
-                    "osigma: Container has no height. You can set the allowInvalidContainer setting to true to stop seeing this error.",
+                    "osigma: Container has no height. You can set the allowInvalidContainer setting to true to stop seeing this error."
                 );
         }
 
         // If nothing has changed, we can stop right here
-        if (previousWidth === this.width && previousHeight === this.height) return this;
+        if (previousWidth === this.width && previousHeight === this.height)
+            return this;
 
         this.emit("resize");
 
@@ -1510,18 +1729,36 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
 
         // Sizing canvas contexts
         for (const id in this.canvasContexts) {
-            this.elements[id].setAttribute("width", this.width * this.pixelRatio + "px");
-            this.elements[id].setAttribute("height", this.height * this.pixelRatio + "px");
+            this.elements[id].setAttribute(
+                "width",
+                this.width * this.pixelRatio + "px"
+            );
+            this.elements[id].setAttribute(
+                "height",
+                this.height * this.pixelRatio + "px"
+            );
 
-            if (this.pixelRatio !== 1) this.canvasContexts[id].scale(this.pixelRatio, this.pixelRatio);
+            if (this.pixelRatio !== 1)
+                this.canvasContexts[id].scale(this.pixelRatio, this.pixelRatio);
         }
 
         // Sizing WebGL contexts
         for (const id in this.webGLContexts) {
-            this.elements[id].setAttribute("width", this.width * this.pixelRatio + "px");
-            this.elements[id].setAttribute("height", this.height * this.pixelRatio + "px");
+            this.elements[id].setAttribute(
+                "width",
+                this.width * this.pixelRatio + "px"
+            );
+            this.elements[id].setAttribute(
+                "height",
+                this.height * this.pixelRatio + "px"
+            );
 
-            this.webGLContexts[id].viewport(0, 0, this.width * this.pixelRatio, this.height * this.pixelRatio);
+            this.webGLContexts[id].viewport(
+                0,
+                0,
+                this.width * this.pixelRatio,
+                this.height * this.pixelRatio
+            );
         }
 
         return this;
@@ -1530,12 +1767,18 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
     /**
      * Method used to clear all the canvases.
      *
-     * @return {osigma}
+     * @return {OSigma}
      */
     clear(): this {
-        this.webGLContexts.nodes.clear(this.webGLContexts.nodes.COLOR_BUFFER_BIT);
-        this.webGLContexts.edges.clear(this.webGLContexts.edges.COLOR_BUFFER_BIT);
-        this.webGLContexts.hoverNodes.clear(this.webGLContexts.hoverNodes.COLOR_BUFFER_BIT);
+        this.webGLContexts.nodes.clear(
+            this.webGLContexts.nodes.COLOR_BUFFER_BIT
+        );
+        this.webGLContexts.edges.clear(
+            this.webGLContexts.edges.COLOR_BUFFER_BIT
+        );
+        this.webGLContexts.hoverNodes.clear(
+            this.webGLContexts.hoverNodes.COLOR_BUFFER_BIT
+        );
         this.canvasContexts.labels.clearRect(0, 0, this.width, this.height);
         this.canvasContexts.hovers.clearRect(0, 0, this.width, this.height);
         this.canvasContexts.edgeLabels.clearRect(0, 0, this.width, this.height);
@@ -1547,7 +1790,7 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
      * Method used to refresh, i.e. force the renderer to fully reprocess graph
      * data and render.
      *
-     * @return {osigma}
+     * @return {OSigma}
      */
     refresh(): this {
         this.needToProcess = true;
@@ -1561,7 +1804,7 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
      * This method can be safely called on a same frame because it basically
      * debounce refresh to the next frame.
      *
-     * @return {osigma}
+     * @return {OSigma}
      */
     scheduleRender(): this {
         if (!this.renderFrame) {
@@ -1579,7 +1822,7 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
      * This method can be safely called on a same frame because it basically
      * debounce refresh to the next frame.
      *
-     * @return {osigma}
+     * @return {OSigma}
      */
     scheduleRefresh(): this {
         this.needToProcess = true;
@@ -1595,7 +1838,10 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
      * @param newRatio
      * @return {CameraState}
      */
-    getViewportZoomedState(viewportTarget: Coordinates, newRatio: number): CameraState {
+    getViewportZoomedState(
+        viewportTarget: Coordinates,
+        newRatio: number
+    ): CameraState {
         const { ratio, angle, x, y } = this.camera.getState();
 
         // TODO: handle max zoom
@@ -1611,8 +1857,14 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
 
         return {
             angle,
-            x: (graphMousePosition.x - graphCenterPosition.x) * (1 - ratioDiff) + x,
-            y: (graphMousePosition.y - graphCenterPosition.y) * (1 - ratioDiff) + y,
+            x:
+                (graphMousePosition.x - graphCenterPosition.x) *
+                    (1 - ratioDiff) +
+                x,
+            y:
+                (graphMousePosition.y - graphCenterPosition.y) *
+                    (1 - ratioDiff) +
+                y,
             ratio: newRatio,
         };
     }
@@ -1634,8 +1886,14 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
         const marginX = (0 * this.width) / 8,
             marginY = (0 * this.height) / 8;
 
-        const p1 = this.viewportToFramedGraph({ x: 0 - marginX, y: 0 - marginY }),
-            p2 = this.viewportToFramedGraph({ x: this.width + marginX, y: 0 - marginY }),
+        const p1 = this.viewportToFramedGraph({
+                x: 0 - marginX,
+                y: 0 - marginY,
+            }),
+            p2 = this.viewportToFramedGraph({
+                x: this.width + marginX,
+                y: 0 - marginY,
+            }),
             h = this.viewportToFramedGraph({ x: 0, y: this.height + marginY });
 
         return {
@@ -1654,18 +1912,24 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
      * Be careful if overriding dimensions, padding or cameraState, as the computation of the matrix is not the lightest
      * of computations.
      */
-    framedGraphToViewport(coordinates: Coordinates, override: CoordinateConversionOverride = {}): Coordinates {
-        const recomputeMatrix = !!override.cameraState || !!override.viewportDimensions || !!override.graphDimensions;
+    framedGraphToViewport(
+        coordinates: Coordinates,
+        override: CoordinateConversionOverride = {}
+    ): Coordinates {
+        const recomputeMatrix =
+            !!override.cameraState ||
+            !!override.viewportDimensions ||
+            !!override.graphDimensions;
         const matrix = override.matrix
             ? override.matrix
             : recomputeMatrix
-                ? matrixFromCamera(
-                    override.cameraState || this.camera.getState(),
-                    override.viewportDimensions || this.getDimensions(),
-                    override.graphDimensions || this.getGraphDimensions(),
-                    override.padding || this.getSetting("stagePadding") || 0,
-                )
-                : this.matrix;
+            ? matrixFromCamera(
+                  override.cameraState || this.camera.getState(),
+                  override.viewportDimensions || this.getDimensions(),
+                  override.graphDimensions || this.getGraphDimensions(),
+                  override.padding || this.getSetting("stagePadding") || 0
+              )
+            : this.matrix;
 
         const viewportPos = multiplyVec2(matrix, coordinates);
 
@@ -1682,19 +1946,25 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
      * Be careful if overriding dimensions, padding or cameraState, as the computation of the matrix is not the lightest
      * of computations.
      */
-    viewportToFramedGraph(coordinates: Coordinates, override: CoordinateConversionOverride = {}): Coordinates {
-        const recomputeMatrix = !!override.cameraState || !!override.viewportDimensions || !override.graphDimensions;
+    viewportToFramedGraph(
+        coordinates: Coordinates,
+        override: CoordinateConversionOverride = {}
+    ): Coordinates {
+        const recomputeMatrix =
+            !!override.cameraState ||
+            !!override.viewportDimensions ||
+            !override.graphDimensions;
         const invMatrix = override.matrix
             ? override.matrix
             : recomputeMatrix
-                ? matrixFromCamera(
-                    override.cameraState || this.camera.getState(),
-                    override.viewportDimensions || this.getDimensions(),
-                    override.graphDimensions || this.getGraphDimensions(),
-                    override.padding || this.getSetting("stagePadding") || 0,
-                    true,
-                )
-                : this.invMatrix;
+            ? matrixFromCamera(
+                  override.cameraState || this.camera.getState(),
+                  override.viewportDimensions || this.getDimensions(),
+                  override.graphDimensions || this.getGraphDimensions(),
+                  override.padding || this.getSetting("stagePadding") || 0,
+                  true
+              )
+            : this.invMatrix;
 
         const res = multiplyVec2(invMatrix, {
             x: (coordinates.x / this.width) * 2 - 1,
@@ -1717,8 +1987,13 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
      * @param {Coordinates}                  viewportPoint
      * @param {CoordinateConversionOverride} override
      */
-    viewportToGraph(viewportPoint: Coordinates, override: CoordinateConversionOverride = {}): Coordinates {
-        return this.normalizationFunction.inverse(this.viewportToFramedGraph(viewportPoint, override));
+    viewportToGraph(
+        viewportPoint: Coordinates,
+        override: CoordinateConversionOverride = {}
+    ): Coordinates {
+        return this.normalizationFunction.inverse(
+            this.viewportToFramedGraph(viewportPoint, override)
+        );
     }
 
     /**
@@ -1731,8 +2006,14 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
      * @param {Coordinates}                  graphPoint
      * @param {CoordinateConversionOverride} override
      */
-    graphToViewport(graphPoint: Coordinates, override: CoordinateConversionOverride = {}): Coordinates {
-        return this.framedGraphToViewport(this.normalizationFunction(graphPoint), override);
+    graphToViewport(
+        graphPoint: Coordinates,
+        override: CoordinateConversionOverride = {}
+    ): Coordinates {
+        return this.framedGraphToViewport(
+            this.normalizationFunction(graphPoint),
+            override
+        );
     }
 
     /**
@@ -1742,11 +2023,17 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
     getGraphToViewportRatio(): number {
         const graphP1 = { x: 0, y: 0 };
         const graphP2 = { x: 1, y: 1 };
-        const graphD = Math.sqrt(Math.pow(graphP1.x - graphP2.x, 2) + Math.pow(graphP1.y - graphP2.y, 2));
+        const graphD = Math.sqrt(
+            Math.pow(graphP1.x - graphP2.x, 2) +
+                Math.pow(graphP1.y - graphP2.y, 2)
+        );
 
         const viewportP1 = this.graphToViewport(graphP1);
         const viewportP2 = this.graphToViewport(graphP2);
-        const viewportD = Math.sqrt(Math.pow(viewportP1.x - viewportP2.x, 2) + Math.pow(viewportP1.y - viewportP2.y, 2));
+        const viewportD = Math.sqrt(
+            Math.pow(viewportP1.x - viewportP2.x, 2) +
+                Math.pow(viewportP1.y - viewportP2.y, 2)
+        );
 
         return viewportD / graphD;
     }
@@ -1772,7 +2059,7 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
     /**
      * Method used to override the graph's bounding box with a custom one. Give `null` as the argument to stop overriding.
      *
-     * @return {osigma}
+     * @return {OSigma}
      */
     setCustomBBox(customBBox: { x: Extent; y: Extent } | null): this {
         this.customBBox = customBBox;
@@ -1826,7 +2113,8 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
         // Destroying canvases
         const container = this.container;
 
-        while (container.firstChild) container.removeChild(container.firstChild);
+        while (container.firstChild)
+            container.removeChild(container.firstChild);
     }
 
     /**
@@ -1840,7 +2128,9 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
     scaleSize(size = 1, cameraRatio = this.camera.ratio): number {
         return (
             (size / this.settings.zoomToSizeRatioFunction(cameraRatio)) *
-            (this.getSetting("itemSizesReference") === "positions" ? cameraRatio * this.graphToViewportRatio : 1)
+            (this.getSetting("itemSizesReference") === "positions"
+                ? cameraRatio * this.graphToViewportRatio
+                : 1)
         );
     }
 
