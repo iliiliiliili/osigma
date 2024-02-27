@@ -663,7 +663,7 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
         // the length of a non-null edge is transformed to between the graph system
         // and the viewport system:
         let transformationRatio = 0;
-        this.graph.someEdge((key, _, sourceId, targetId, { x: xs, y: ys }, { x: xt, y: yt }) => {
+        this.graph.someEdge((key, _, sourceId, targetId, [xs, ys], [xt, yt]) => {
             if (edgeDataCache[key].hidden || nodeDataCache[sourceId].hidden || nodeDataCache[targetId].hidden) return false;
 
             if (xs !== xt || ys !== yt) {
@@ -676,6 +676,8 @@ export default class osigma<TId extends TypedArray, TConnectionWeight extends Ty
                 transformationRatio = graphLength / viewportLength;
                 return true;
             }
+
+            return false;
         });
         // If no non-null edge has been found, return null:
         if (!transformationRatio) return null;
