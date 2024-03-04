@@ -26,6 +26,7 @@ import {
     TLabel,
     TSize,
     TNodeFlags,
+    TNodeVisual,
 } from "./types";
 import {
     createElement,
@@ -182,10 +183,12 @@ export default class OSigma<
     TId extends TypedArray,
     TConnectionWeight extends TypedArray,
     TCoordinates extends TypedArray,
-    TFeatures extends TypedArray[]
+    TZIndex extends TypedArray,
+    TNodeFeatures extends TypedArray[],
+    TConnectionFlags extends TypedArray
 > extends TypedEventEmitter<OsigmaEvents> {
     private settings: Settings;
-    private graph: OGraph<TId, TConnectionWeight, TCoordinates, [...TFeatures, TColor, TLabel, TSize, TNodeFlags]>;
+    private graph: OGraph<TId, TConnectionWeight, TCoordinates, TZIndex, [...TNodeFeatures, ...TNodeVisual], TConnectionFlags>;
     private mouseCaptor: MouseCaptor;
     private touchCaptor: TouchCaptor;
     private container: HTMLElement;
@@ -238,7 +241,7 @@ export default class OSigma<
     private camera: Camera;
 
     constructor(
-        graph: OGraph<TId, TConnectionWeight, TCoordinates, [...TFeatures, TColor, TLabel, TSize, TNodeFlags]>,
+        graph: OGraph<TId, TConnectionWeight, TCoordinates, TZIndex, [...TNodeFeatures, ...TNodeVisual], TConnectionFlags>,
         container: HTMLElement,
         settings: Partial<Settings> = {}
     ) {

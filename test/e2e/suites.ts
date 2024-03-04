@@ -5,21 +5,20 @@ import { OGraph } from "../../src/core/ograph";
 import {
     NodeDisplayData,
     EdgeDisplayData,
-    TColor,
-    TLabel,
-    TSize,
-    TNodeFlags,
+    TNodeVisual,
 } from "../../src/types";
 
 type TId = Int32Array;
 type TConnectionWeight = Uint8Array;
 type TCoordinates = Float32Array;
-type TFeatures = [Int8Array];
+type TZIndex = Uint8Array;
+type TNodeFeatures = [Int8Array];
+type TConnectionFlags = Uint8Array;
 
 type TestDependencies = {
     OSigma: typeof OSigma;
     data: {
-        [key: string]: OGraph<TId, TConnectionWeight, TCoordinates, TFeatures>;
+        [key: string]: OGraph<TId, TConnectionWeight, TCoordinates, TZIndex, TNodeFeatures, TConnectionFlags>;
     };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     programs: { [key: string]: any };
@@ -49,7 +48,9 @@ export const tests: Tests = [
                     TId,
                     TConnectionWeight,
                     TCoordinates,
-                    [...TFeatures, TColor, TLabel, TSize, TNodeFlags]
+                    TZIndex,
+                    [...TNodeFeatures, ...TNodeVisual],
+                    TConnectionFlags
                 >(
                     {
                         features: [
@@ -61,12 +62,14 @@ export const tests: Tests = [
                         ],
                         xCoordinates: new Float32Array([20]),
                         yCoordinates: new Float32Array([15]),
+                        zIndex: new Uint8Array([1.5]),
                     },
                     {
                         from: new Int32Array([0]),
                         to: new Int32Array([0]),
                         value: new Uint8Array([0]),
-                        zIndex: new Float32Array([1.5]),
+                        zIndex: new Uint8Array([1.5]),
+                        flags: new Uint8Array([1.5]),
                     }
                 );
 

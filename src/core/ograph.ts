@@ -91,17 +91,19 @@ export class OGraph<
         TId extends TypedArray,
         TConnectionWeight extends TypedArray,
         TCoordinates extends TypedArray,
-        TFeatures extends TypedArray[]
+        TZIndex extends TypedArray,
+        TNodeFeatures extends TypedArray[],
+        TConnectionFlags extends TypedArray,
     >
     extends OGraphEventEmitter
-    implements OGraphologyInterface<TId, TConnectionWeight, TFeatures>
+    implements OGraphologyInterface<TId, TConnectionWeight, TNodeFeatures>
 {
-    public nodes: OSpatialNodes<TCoordinates, TFeatures>;
-    public connections: OSpatialConnections<TId, TCoordinates, TConnectionWeight>;
+    public nodes: OSpatialNodes<TCoordinates, TZIndex, TNodeFeatures>;
+    public connections: OSpatialConnections<TId, TConnectionWeight, TZIndex, TConnectionFlags>;
 
     public constructor(
-        nodes: OSpatialNodes<TCoordinates, TFeatures>,
-        connections: OSpatialConnections<TId, TConnectionWeight, TCoordinates>
+        nodes: OSpatialNodes<TCoordinates, TZIndex, TNodeFeatures>,
+        connections: OSpatialConnections<TId, TConnectionWeight, TZIndex, TConnectionFlags>
     ) {
         super();
 
@@ -110,7 +112,7 @@ export class OGraph<
     }
 
     get nodeCount(): number {
-        return this.nodes.ids.length;
+        return this.nodes.features[0].length;
     }
 
     get connectionCount(): number {
@@ -215,19 +217,23 @@ export interface ONodes<
 export interface OSpatialConnections<
     TId extends TypedArray,
     TValue extends TypedArray,
-    TCoordinates extends TypedArray,
+    TZIndex extends TypedArray,
+    TFlags extends TypedArray,
 > {
     from: TId;
     to: TId;
     value: TValue;
-    zIndex: TCoordinates,
+    zIndex: TZIndex,
+    flags: TFlags,
 }
 
 export interface OSpatialNodes<
     TCoordinates extends TypedArray,
+    TZIndex extends TypedArray,
     TFeatures extends TypedArray[]
 > extends ONodes<TFeatures> {
     xCoordinates: TCoordinates;
     yCoordinates: TCoordinates;
+    zIndex: TZIndex,
     features: TFeatures;
 }
