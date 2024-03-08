@@ -156,9 +156,18 @@ export function graphExtent<
     TId extends TypedArray,
     TConnectionWeight extends TypedArray,
     TCoordinates extends TypedArray,
-    TFeatures extends TypedArray[]
+    TZIndex extends TypedArray,
+    TNodeFeatures extends TypedArray[],
+    TConnectionFeatures extends TypedArray[]
 >(
-    graph: OGraph<TId, TConnectionWeight, TCoordinates, TFeatures>
+    graph: OGraph<
+        TId,
+        TConnectionWeight,
+        TCoordinates,
+        TZIndex,
+        TNodeFeatures,
+        TConnectionFeatures
+    >
 ): { x: Extent; y: Extent } {
     if (graph.nodeCount <= 0) return { x: [0, 1], y: [0, 1] };
 
@@ -168,7 +177,6 @@ export function graphExtent<
     let yMax = -Infinity;
 
     for (let i = 0; i < graph.nodeCount; i++) {
-        
         const x = graph.nodes.xCoordinates[i];
         const y = graph.nodes.yCoordinates[i];
 

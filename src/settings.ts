@@ -32,10 +32,11 @@ export interface Settings {
     enableEdgeWheelEvents: boolean;
     enableEdgeHoverEvents: boolean | "debounce";
     // Component rendering
-    defaultNodeColor: string;
-    defaultNodeType: string;
-    defaultEdgeColor: string;
-    defaultEdgeType: string;
+    defaultNodeColor: number;
+    defaultNodeSize: number;
+    defaultNodeType: number;
+    defaultEdgeColor: number;
+    defaultEdgeType: number;
     labelFont: string;
     labelSize: number;
     labelWeight: string;
@@ -82,10 +83,11 @@ export const DEFAULT_SETTINGS: Settings = {
     enableEdgeHoverEvents: false,
 
     // Component rendering
-    defaultNodeColor: "#999",
-    defaultNodeType: "circle",
-    defaultEdgeColor: "#ccc",
-    defaultEdgeType: "line",
+    defaultNodeColor: 1,
+    defaultNodeSize: 2,
+    defaultNodeType: 0,
+    defaultEdgeColor: 2,
+    defaultEdgeType: 0,
     labelFont: "Arial",
     labelSize: 14,
     labelWeight: "normal",

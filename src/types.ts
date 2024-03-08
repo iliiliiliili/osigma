@@ -132,3 +132,4 @@ export type TSize = Uint8Array
 export type TNodeFlags = Uint8Array
 export type TEdgeFlags = Uint8Array
 export type TNodeVisual = [TColor, TLabel, TSize, TNodeFlags]
+export type TConnectionVisual = [TColor, TLabel, TSize, TEdgeFlags]

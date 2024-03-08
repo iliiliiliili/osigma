@@ -6,6 +6,7 @@ import {
     NodeDisplayData,
     EdgeDisplayData,
     TNodeVisual,
+    TConnectionVisual,
 } from "../../src/types";
 
 type TId = Int32Array;
@@ -13,7 +14,7 @@ type TConnectionWeight = Uint8Array;
 type TCoordinates = Float32Array;
 type TZIndex = Uint8Array;
 type TNodeFeatures = [Int8Array];
-type TConnectionFlags = Uint8Array;
+type TConnectionFeatures = [];
 
 type TestDependencies = {
     OSigma: typeof OSigma;
@@ -50,7 +51,7 @@ export const tests: Tests = [
                     TCoordinates,
                     TZIndex,
                     [...TNodeFeatures, ...TNodeVisual],
-                    TConnectionFlags
+                    [...TConnectionFeatures, ...TConnectionVisual]
                 >(
                     {
                         features: [
@@ -69,7 +70,12 @@ export const tests: Tests = [
                         to: new Int32Array([0]),
                         value: new Uint8Array([0]),
                         zIndex: new Uint8Array([1.5]),
-                        flags: new Uint8Array([1.5]),
+                        features: [
+                            new Uint8Array([2]),
+                            new Uint8Array([0]),
+                            new Uint8Array([10]),
+                            new Uint8Array([0]),
+                        ],
                     }
                 );
 

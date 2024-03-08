@@ -27,6 +27,7 @@ import {
     TSize,
     TNodeFlags,
     TNodeVisual,
+    TConnectionVisual,
 } from "./types";
 import {
     createElement,
@@ -36,7 +37,6 @@ import {
     cancelFrame,
     matrixFromCamera,
     requestFrame,
-    validateGraph,
     zIndexOrdering,
     getMatrixImpact,
     graphExtent,
@@ -57,64 +57,6 @@ import {
  */
 const X_LABEL_MARGIN = 150;
 const Y_LABEL_MARGIN = 50;
-
-/**
- * Important functions.
- */
-function applyNodeDefaults(
-    settings: Settings,
-    key: string,
-    data: Partial<NodeDisplayData>
-): NodeDisplayData {
-    if (!data.hasOwnProperty("x") || !data.hasOwnProperty("y"))
-        throw new Error(
-            `osigma: could not find a valid position (x, y) for node "${key}". All your nodes must have a number "x" and "y". Maybe your forgot to apply a layout or your "nodeReducer" is not returning the correct data?`
-        );
-
-    if (!data.color) data.color = settings.defaultNodeColor;
-
-    if (!data.label && data.label !== "") data.label = null;
-
-    if (data.label !== undefined && data.label !== null)
-        data.label = "" + data.label;
-    else data.label = null;
-
-    if (!data.size) data.size = 2;
-
-    if (!data.hasOwnProperty("hidden")) data.hidden = false;
-
-    if (!data.hasOwnProperty("highlighted")) data.highlighted = false;
-
-    if (!data.hasOwnProperty("forceLabel")) data.forceLabel = false;
-
-    if (!data.type || data.type === "") data.type = settings.defaultNodeType;
-
-    if (!data.zIndex) data.zIndex = 0;
-
-    return data as NodeDisplayData;
-}
-
-function applyEdgeDefaults(
-    settings: Settings,
-    key: string,
-    data: Partial<EdgeDisplayData>
-): EdgeDisplayData {
-    if (!data.color) data.color = settings.defaultEdgeColor;
-
-    if (!data.label) data.label = "";
-
-    if (!data.size) data.size = 0.5;
-
-    if (!data.hasOwnProperty("hidden")) data.hidden = false;
-
-    if (!data.hasOwnProperty("forceLabel")) data.forceLabel = false;
-
-    if (!data.type || data.type === "") data.type = settings.defaultEdgeType;
-
-    if (!data.zIndex) data.zIndex = 0;
-
-    return data as EdgeDisplayData;
-}
 
 /**
  * Event types.
@@ -185,13 +127,20 @@ export default class OSigma<
     TCoordinates extends TypedArray,
     TZIndex extends TypedArray,
     TNodeFeatures extends TypedArray[],
-    TConnectionFlags extends TypedArray
+    TConnectionFeatures extends TypedArray[],
 > extends TypedEventEmitter<OsigmaEvents> {
     private settings: Settings;
-    private graph: OGraph<TId, TConnectionWeight, TCoordinates, TZIndex, [...TNodeFeatures, ...TNodeVisual], TConnectionFlags>;
+    private graph: OGraph<
+        TId,
+        TConnectionWeight,
+        TCoordinates,
+        TZIndex,
+        [...TNodeFeatures, ...TNodeVisual],
+        [...TConnectionFeatures, ...TConnectionVisual]
+    >;
     private mouseCaptor: MouseCaptor;
     private touchCaptor: TouchCaptor;
-    private container: HTMLElement;
+    private container: HTMLElement | null;
     private elements: PlainObject<HTMLCanvasElement> = {};
     private canvasContexts: PlainObject<CanvasRenderingContext2D> = {};
     private webGLContexts: PlainObject<WebGLRenderingContext> = {};
@@ -240,40 +189,75 @@ export default class OSigma<
 
     private camera: Camera;
 
+    private shouldDefaultGraphVisuals: boolean;
+
+    private nodeColorFeatureId: number;
+    private nodeLabelFeatureId: number;
+    private nodeSizeFeatureId: number;
+    private nodeFlagsFeatureId: number;
+
+    private connectionColorFeatureId: number;
+    private connectionLabelFeatureId: number;
+    private connectionSizeFeatureId: number;
+    private connectionFlagsFeatureId: number;
+
     constructor(
-        graph: OGraph<TId, TConnectionWeight, TCoordinates, TZIndex, [...TNodeFeatures, ...TNodeVisual], TConnectionFlags>,
-        container: HTMLElement,
-        settings: Partial<Settings> = {}
+        graph: OGraph<
+            TId,
+            TConnectionWeight,
+            TCoordinates,
+            TZIndex,
+            [...TNodeFeatures, ...TNodeVisual],
+            [...TConnectionFeatures, ...TConnectionVisual]
+        >,
+        container: HTMLElement | null,
+        settings: Partial<Settings> = {},
+        shouldDefaultGraphVisuals = true,
     ) {
         super();
+
+        this.shouldDefaultGraphVisuals = shouldDefaultGraphVisuals;
+
+        this.nodeColorFeatureId = graph.nodes.features.length - 4;
+        this.nodeLabelFeatureId = graph.nodes.features.length - 3;
+        this.nodeSizeFeatureId = graph.nodes.features.length - 2;
+        this.nodeFlagsFeatureId = graph.nodes.features.length - 1;
+        
+        this.connectionColorFeatureId = graph.connections.features.length - 4;
+        this.connectionLabelFeatureId = graph.connections.features.length - 3;
+        this.connectionSizeFeatureId = graph.connections.features.length - 2;
+        this.connectionFlagsFeatureId = graph.connections.features.length - 1;
 
         // Resolving settings
         this.settings = resolveSettings(settings);
 
         // Validating
         validateSettings(this.settings);
-        if (!(container instanceof HTMLElement))
-            throw new Error("osigma: container should be an html element.");
+        if (!(container == null || (container instanceof HTMLElement)))
+            throw new Error("osigma: container should be an html element or null for headless tests.");
 
         // Properties
         this.graph = graph;
         this.container = container;
+        
+        if (container != null) {
 
-        // Initializing contexts
-        this.createWebGLContext("edges", { preserveDrawingBuffer: true });
-        this.createCanvasContext("edgeLabels");
-        this.createWebGLContext("nodes");
-        this.createCanvasContext("labels");
-        this.createCanvasContext("hovers");
-        this.createWebGLContext("hoverNodes");
-        this.createCanvasContext("mouse");
+            // Initializing contexts
+            this.createWebGLContext("edges", { preserveDrawingBuffer: true });
+            this.createCanvasContext("edgeLabels");
+            this.createWebGLContext("nodes");
+            this.createCanvasContext("labels");
+            this.createCanvasContext("hovers");
+            this.createWebGLContext("hoverNodes");
+            this.createCanvasContext("mouse");
 
-        // Blending
-        for (const key in this.webGLContexts) {
-            const gl = this.webGLContexts[key];
+            // Blending
+            for (const key in this.webGLContexts) {
+                const gl = this.webGLContexts[key];
 
-            gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-            gl.enable(gl.BLEND);
+                gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+                gl.enable(gl.BLEND);
+            }
         }
 
         // Loading programs
@@ -350,6 +334,12 @@ export default class OSigma<
         );
 
         this.elements[id] = canvas;
+        
+        if (this.container == null) {
+            
+            throw Error("Container is null");
+        }
+    
         this.container.appendChild(canvas);
 
         return canvas;
@@ -928,32 +918,27 @@ export default class OSigma<
 
         const nodesPerPrograms: Record<string, number> = {};
 
+        if (this.shouldDefaultGraphVisuals) {
+
+            this.applyNodeDefaults(this.settings, this.graph);
+        }
+
+
         for (let i = 0, l = this.graph.nodeCount; i < l; i++) {
-            // Node display data resolution:
-            //   1. First we get the node's attributes
-            //   // 2. We optionally reduce them using the function provided by the user
-            //      Note that this function must return a total object and won't be merged
-            //   3. We apply our defaults, while running some vital checks
-            //   4. We apply the normalization function
 
-            // We shallow copy node data to avoid dangerous behaviors from reducers
-            // let attr = Object.assign({}, graph.getNodeAttributes(node));
+            const [hidden, highlighted, forceLabel, nodeType] = this.decodeNodeFlags(this.graph.nodes.features[this.nodeFlagsFeatureId][i]);
 
-            // if (settings.nodeReducer) attr = settings.nodeReducer(node, attr);
-
-            const data = applyNodeDefaults(this.settings, node, attr);
-
-            nodesPerPrograms[data.type] =
-                (nodesPerPrograms[data.type] || 0) + 1;
-            this.nodeDataCache[node] = data;
+            nodesPerPrograms[nodeType] =
+                (nodesPerPrograms[nodeType] || 0) + 1;
+            // this.nodeDataCache[node] = data;
 
             this.normalizationFunction.applyTo(data);
 
-            if (data.forceLabel) this.nodesWithForcedLabels.push(node);
+            if (forceLabel) this.nodesWithForcedLabels.push(node);
 
             if (this.settings.zIndex) {
-                if (data.zIndex < nodeZExtent[0]) nodeZExtent[0] = data.zIndex;
-                if (data.zIndex > nodeZExtent[1]) nodeZExtent[1] = data.zIndex;
+                if (this.graph.nodes.zIndex[i] < nodeZExtent[0]) nodeZExtent[0] = this.graph.nodes.zIndex[i];
+                if (this.graph.nodes.zIndex[i] > nodeZExtent[1]) nodeZExtent[1] = this.graph.nodes.zIndex[i];
             }
         }
 
@@ -2157,5 +2142,104 @@ export default class OSigma<
      */
     getCanvases(): PlainObject<HTMLCanvasElement> {
         return { ...this.elements };
+    }
+
+
+    public encodeNodeFlags(hidden: boolean, highlighted: boolean, forceLabel: boolean, nodeType: number): number {
+       
+        const result = (
+            (hidden ? 1 : 0) |
+            ((highlighted ? 1 : 0) << 1) |
+            ((forceLabel ? 1 : 0) << 2) |
+            ((nodeType ? 1 : 0) << 3)
+        );
+
+        return result;
+    }
+
+    public decodeNodeFlags(nodeFlags: number): [boolean, boolean, boolean, number] {
+        
+        const hidden = ((nodeFlags) & 0b1) == 1;
+        const highlighted = ((nodeFlags >> 1) & 0b1) == 1;
+        const forceLabel = ((nodeFlags >> 2) & 0b1) == 1;
+        const nodeType = ((nodeFlags >> 3) & 0b11);
+        
+        return [hidden, highlighted, forceLabel, nodeType];
+    }
+    
+    public encodeEdgeFlags(hidden: boolean, forceLabel: boolean, nodeType: number): number {
+       
+        const result = (
+            (hidden ? 1 : 0) |
+            ((forceLabel ? 1 : 0) << 1) |
+            ((nodeType ? 1 : 0) << 2)
+        );
+
+        return result;
+    }
+
+    public decodeEdgeFlags(nodeFlags: number): [boolean, boolean, number] {
+        
+        const hidden = ((nodeFlags) & 0b1) == 1;
+        const forceLabel = ((nodeFlags >> 1) & 0b1) == 1;
+        const nodeType = ((nodeFlags >> 2) & 0b111);
+        
+        return [hidden, forceLabel, nodeType];
+    }
+    
+    protected applyNodeDefaults(
+        settings: Settings,
+        graph: OGraph<
+            TId,
+            TConnectionWeight,
+            TCoordinates,
+            TZIndex,
+            [...TNodeFeatures, ...TNodeVisual],
+            [...TConnectionFeatures, ...TConnectionVisual]
+        >
+    ): void {
+
+
+        const defaultNodeFlags = this.encodeNodeFlags(
+            false,
+            false,
+            false,
+            settings.defaultNodeType,
+        );
+
+        for (let i = 0; i < graph.nodeCount; i ++) {
+            graph.nodes.features[this.nodeColorFeatureId][i] = settings.defaultNodeColor;
+            graph.nodes.features[this.nodeLabelFeatureId][i] = 0;
+            graph.nodes.features[this.nodeSizeFeatureId][i] = settings.defaultNodeSize;
+            graph.nodes.features[this.nodeFlagsFeatureId][i] = defaultNodeFlags;
+            graph.nodes.zIndex[i] = 0;
+        }
+    }
+
+    protected applyEdgeDefaults(
+        settings: Settings,
+        graph: OGraph<
+            TId,
+            TConnectionWeight,
+            TCoordinates,
+            TZIndex,
+            [...TNodeFeatures, ...TNodeVisual],
+            [...TConnectionFeatures, ...TConnectionVisual]
+        >
+    ): void {
+
+        const defaultEdgeFlags = this.encodeEdgeFlags(
+            false,
+            false,
+            settings.defaultEdgeType,
+        );
+
+        for (let i = 0; i < graph.nodeCount; i ++) {
+            graph.connections.features[this.connectionColorFeatureId][i] = settings.defaultNodeColor;
+            graph.connections.features[this.connectionLabelFeatureId][i] = 0;
+            graph.connections.features[this.connectionSizeFeatureId][i] = settings.defaultNodeSize;
+            graph.connections.features[this.connectionFlagsFeatureId][i] = defaultEdgeFlags;
+            graph.connections.zIndex[i] = 0;
+        }
     }
 }

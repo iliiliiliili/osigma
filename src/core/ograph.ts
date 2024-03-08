@@ -93,17 +93,17 @@ export class OGraph<
         TCoordinates extends TypedArray,
         TZIndex extends TypedArray,
         TNodeFeatures extends TypedArray[],
-        TConnectionFlags extends TypedArray,
+        TConnectionFeatures extends TypedArray[],
     >
     extends OGraphEventEmitter
     implements OGraphologyInterface<TId, TConnectionWeight, TNodeFeatures>
 {
     public nodes: OSpatialNodes<TCoordinates, TZIndex, TNodeFeatures>;
-    public connections: OSpatialConnections<TId, TConnectionWeight, TZIndex, TConnectionFlags>;
+    public connections: OSpatialConnections<TId, TConnectionWeight, TZIndex, TConnectionFeatures>;
 
     public constructor(
         nodes: OSpatialNodes<TCoordinates, TZIndex, TNodeFeatures>,
-        connections: OSpatialConnections<TId, TConnectionWeight, TZIndex, TConnectionFlags>
+        connections: OSpatialConnections<TId, TConnectionWeight, TZIndex, TConnectionFeatures>
     ) {
         super();
 
@@ -201,11 +201,13 @@ export class OGraph<
 
 export interface OConnections<
     TId extends TypedArray,
-    TValue extends TypedArray
+    TValue extends TypedArray,
+    TFeatures extends TypedArray[],
 > {
     from: TId;
     to: TId;
     value: TValue;
+    features: TFeatures,
 }
 
 export interface ONodes<
@@ -218,13 +220,12 @@ export interface OSpatialConnections<
     TId extends TypedArray,
     TValue extends TypedArray,
     TZIndex extends TypedArray,
-    TFlags extends TypedArray,
-> {
+    TFeatures extends TypedArray[],
+> extends OConnections<TId, TValue, TFeatures>{
     from: TId;
     to: TId;
     value: TValue;
     zIndex: TZIndex,
-    flags: TFlags,
 }
 
 export interface OSpatialNodes<
