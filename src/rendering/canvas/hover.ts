@@ -18,14 +18,17 @@ import drawLabel from "./label";
  */
 export default function drawHover(
     context: CanvasRenderingContext2D,
-    data: PartialButFor<NodeDisplayData, "x" | "y" | "size" | "label" | "color">,
-    settings: Settings,
+    label: string,
+    x: number,
+    y: number,
+    nodeSize: number,
+    settings: Settings
 ): void {
-    const size = settings.labelSize,
+    const labelSize = settings.labelSize,
         font = settings.labelFont,
         weight = settings.labelWeight;
 
-    context.font = `${weight} ${size}px ${font}`;
+    context.font = `${weight} ${labelSize}px ${font}`;
 
     // Then we draw the label background
     context.fillStyle = "#FFF";
@@ -36,26 +39,28 @@ export default function drawHover(
 
     const PADDING = 2;
 
-    if (typeof data.label === "string") {
-        const textWidth = context.measureText(data.label).width,
+    if (typeof label === "string") {
+        const textWidth = context.measureText(label).width,
             boxWidth = Math.round(textWidth + 5),
-            boxHeight = Math.round(size + 2 * PADDING),
-            radius = Math.max(data.size, size / 2) + PADDING;
+            boxHeight = Math.round(labelSize + 2 * PADDING),
+            radius = Math.max(nodeSize, labelSize / 2) + PADDING;
 
         const angleRadian = Math.asin(boxHeight / 2 / radius);
-        const xDeltaCoord = Math.sqrt(Math.abs(Math.pow(radius, 2) - Math.pow(boxHeight / 2, 2)));
+        const xDeltaCoord = Math.sqrt(
+            Math.abs(Math.pow(radius, 2) - Math.pow(boxHeight / 2, 2))
+        );
 
         context.beginPath();
-        context.moveTo(data.x + xDeltaCoord, data.y + boxHeight / 2);
-        context.lineTo(data.x + radius + boxWidth, data.y + boxHeight / 2);
-        context.lineTo(data.x + radius + boxWidth, data.y - boxHeight / 2);
-        context.lineTo(data.x + xDeltaCoord, data.y - boxHeight / 2);
-        context.arc(data.x, data.y, radius, angleRadian, -angleRadian);
+        context.moveTo(x + xDeltaCoord, y + boxHeight / 2);
+        context.lineTo(x + radius + boxWidth, y + boxHeight / 2);
+        context.lineTo(x + radius + boxWidth, y - boxHeight / 2);
+        context.lineTo(x + xDeltaCoord, y - boxHeight / 2);
+        context.arc(x, y, radius, angleRadian, -angleRadian);
         context.closePath();
         context.fill();
     } else {
         context.beginPath();
-        context.arc(data.x, data.y, data.size + PADDING, 0, Math.PI * 2);
+        context.arc(x, y, nodeSize + PADDING, 0, Math.PI * 2);
         context.closePath();
         context.fill();
     }
@@ -65,5 +70,5 @@ export default function drawHover(
     context.shadowBlur = 0;
 
     // And finally we draw the label
-    drawLabel(context, data, settings);
+    drawLabel(context, label, x, y, nodeSize, settings);
 }

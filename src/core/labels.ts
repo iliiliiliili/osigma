@@ -5,8 +5,6 @@
  * Miscelleneous heuristics related to label display.
  * @module
  */
-import Graph from "graphology-types";
-
 import { Dimensions, Coordinates } from "../types";
 
 /**
@@ -122,14 +120,14 @@ export class LabelGrid {
  * @param  {Set}      displayedNodeLabels  - Currently displayed node labels.
  * @param  {Set}      highlightedNodes     - Highlighted nodes.
  * @param  {Graph}    graph                - The rendered graph.
- * @param  {string}   hoveredNode          - Hovered node (optional)
+ * @param  {number}   hoveredNode          - Hovered node (optional)
  * @return {Array}                         - The selected labels.
  */
 export function edgeLabelsToDisplayFromNodes(params: {
-    displayedNodeLabels: Set<string>;
-    highlightedNodes: Set<string>;
+    displayedNodeLabels: Set<number>;
+    highlightedNodes: Set<number>;
     graph: Graph;
-    hoveredNode: string | null;
+    hoveredNode: number | null;
 }): Array<string> {
     const { graph, hoveredNode, highlightedNodes, displayedNodeLabels } = params;
 

@@ -1175,6 +1175,7 @@ export default class OSigma<
                 decodeLabel(this.graph.nodes.features[this.nodeLabelFeatureId][nodeId]),
                 x,
                 y,
+                size,
                 this.settings
             );
         }
@@ -1189,6 +1190,7 @@ export default class OSigma<
      * @return {OSigma}
      */
     private renderEdgeLabels(): this {
+        return this;
         if (!this.settings.renderEdgeLabels) return this;
 
         const context = this.canvasContexts.edgeLabels;
@@ -1262,30 +1264,37 @@ export default class OSigma<
         context.clearRect(0, 0, this.width, this.height);
 
         // Rendering
-        const render = (node: string): void => {
-            const data = this.nodeDataCache[node];
+        const render = (nodeId: number): void => {
+            // const data = this.nodeDataCache[node];
 
-            const { x, y } = this.framedGraphToViewport(data);
+            const { x, y } = this.framedGraphToViewport({
+                x: this.graph.nodes.xCoordinates[nodeId],
+                y: this.graph.nodes.yCoordinates[nodeId],
+            });
 
-            const size = this.scaleSize(data.size);
+            const size = this.scaleSize(this.graph.nodes.features[this.nodeSizeFeatureId][nodeId]);
 
             this.settings.hoverRenderer(
                 context,
-                {
-                    key: node,
-                    ...data,
-                    size,
-                    x,
-                    y,
-                },
+                decodeLabel(this.graph.nodes.features[this.nodeLabelFeatureId][nodeId]),
+                x,
+                y,
+                size,
                 this.settings
             );
         };
 
-        const nodesToRender: string[] = [];
+        const nodesToRender: number[] = [];
 
-        if (this.hoveredNode && !this.nodeDataCache[this.hoveredNode].hidden) {
-            nodesToRender.push(this.hoveredNode);
+        if (this.hoveredNode) {
+            const [hidden, , , ] = this.decodeNodeFlags(
+                this.graph.nodes.features[this.nodeFlagsFeatureId][this.hoveredNode]
+            );
+
+            if (!hidden) {
+                
+                nodesToRender.push(this.hoveredNode);
+            }
         }
 
         this.highlightedNodes.forEach((node) => {

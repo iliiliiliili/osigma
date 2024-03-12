@@ -33,16 +33,17 @@ export default function drawLabel(
     label: string,
     x: number,
     y: number,
+    nodeSize: number,
     settings: Settings,
 ): void {
 
-    const size = settings.labelSize,
+    const labelSize = settings.labelSize,
         font = settings.labelFont,
         weight = settings.labelWeight,
         color = settings.labelColor.color || "#000"
 
     context.fillStyle = color;
-    context.font = `${weight} ${size}px ${font}`;
+    context.font = `${weight} ${labelSize}px ${font}`;
 
-    context.fillText(label, x + size + 3, y + size / 3);
+    context.fillText(label, x + nodeSize + 3, y + labelSize / 3);
 }
