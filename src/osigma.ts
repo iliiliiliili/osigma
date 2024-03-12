@@ -1009,8 +1009,7 @@ export default class OSigma<
             nodeProgram.process(nodesPerPrograms[nodeType]++, i);
 
             // Save the node in the highlighted set if needed
-            if (highlighted && !hidden)
-                this.highlightedNodes.add(i);
+            if (highlighted && !hidden) this.highlightedNodes.add(i);
         }
 
         this.labelGrid.organize();
@@ -1022,7 +1021,6 @@ export default class OSigma<
         }
 
         for (let i = 0, l = graph.connectionCount; i < l; i++) {
-
             // Edge display data resolution:
             //   1. First we get the edge's attributes
             //   2. We optionally reduce them using the function provided by the user
@@ -1033,21 +1031,21 @@ export default class OSigma<
             // let attr = Object.assign({}, graph.getEdgeAttributes(edge));
 
             // if (settings.edgeReducer) attr = settings.edgeReducer(edge, attr);
-            
+
             const [hidden, forceLabel, edgeType] = this.decodeEdgeFlags(
                 this.graph.nodes.features[this.nodeFlagsFeatureId][i]
             );
 
-            edgesPerPrograms[edgeType] =
-                (edgesPerPrograms[edgeType] || 0) + 1;
+            edgesPerPrograms[edgeType] = (edgesPerPrograms[edgeType] || 0) + 1;
             // this.edgeDataCache[edge] = data;
 
-            if (forceLabel && !hidden)
-                this.edgesWithForcedLabels.push(i);
+            if (forceLabel && !hidden) this.edgesWithForcedLabels.push(i);
 
             if (this.settings.zIndex) {
-                if (graph.connections.zIndex[i] < edgeZExtent[0]) edgeZExtent[0] = graph.connections.zIndex[i];
-                if (graph.connections.zIndex[i] > edgeZExtent[1]) edgeZExtent[1] = graph.connections.zIndex[i];
+                if (graph.connections.zIndex[i] < edgeZExtent[0])
+                    edgeZExtent[0] = graph.connections.zIndex[i];
+                if (graph.connections.zIndex[i] > edgeZExtent[1])
+                    edgeZExtent[1] = graph.connections.zIndex[i];
             }
         }
 
@@ -1072,7 +1070,6 @@ export default class OSigma<
         //     );
 
         for (let i = 0, l = graph.connectionCount; i < l; i++) {
-
             this.edgePrograms[data.type].process(
                 edgesPerPrograms[data.type]++,
                 i
@@ -1105,10 +1102,11 @@ export default class OSigma<
         const cameraState = this.camera.getState();
 
         // Selecting labels to draw
-        const nodesWhichLabelsToDisplay = this.labelGrid.getNodesWhichLabelsToDisplay(
-            cameraState.ratio,
-            this.settings.labelDensity
-        );
+        const nodesWhichLabelsToDisplay =
+            this.labelGrid.getNodesWhichLabelsToDisplay(
+                cameraState.ratio,
+                this.settings.labelDensity
+            );
         extend(nodesWhichLabelsToDisplay, this.nodesWithForcedLabels);
 
         this.displayedNodeLabels = new Set();
@@ -1137,13 +1135,12 @@ export default class OSigma<
             });
 
             // NOTE: we can cache the labels we need to render until the camera's ratio changes
-            const size = this.scaleSize(this.graph.nodes.features[this.nodeSizeFeatureId][nodeId]);
+            const size = this.scaleSize(
+                this.graph.nodes.features[this.nodeSizeFeatureId][nodeId]
+            );
 
             // Is node big enough?
-            if (
-                !forceLabel &&
-                size < this.settings.labelRenderedSizeThreshold
-            )
+            if (!forceLabel && size < this.settings.labelRenderedSizeThreshold)
                 continue;
 
             // Is node actually on screen (with some margin)
@@ -1172,7 +1169,9 @@ export default class OSigma<
 
             this.settings.labelRenderer(
                 context,
-                decodeLabel(this.graph.nodes.features[this.nodeLabelFeatureId][nodeId]),
+                decodeLabel(
+                    this.graph.nodes.features[this.nodeLabelFeatureId][nodeId]
+                ),
                 x,
                 y,
                 size,
@@ -1272,11 +1271,15 @@ export default class OSigma<
                 y: this.graph.nodes.yCoordinates[nodeId],
             });
 
-            const size = this.scaleSize(this.graph.nodes.features[this.nodeSizeFeatureId][nodeId]);
+            const size = this.scaleSize(
+                this.graph.nodes.features[this.nodeSizeFeatureId][nodeId]
+            );
 
             this.settings.hoverRenderer(
                 context,
-                decodeLabel(this.graph.nodes.features[this.nodeLabelFeatureId][nodeId]),
+                decodeLabel(
+                    this.graph.nodes.features[this.nodeLabelFeatureId][nodeId]
+                ),
                 x,
                 y,
                 size,
@@ -1287,12 +1290,13 @@ export default class OSigma<
         const nodesToRender: number[] = [];
 
         if (this.hoveredNode) {
-            const [hidden, , , ] = this.decodeNodeFlags(
-                this.graph.nodes.features[this.nodeFlagsFeatureId][this.hoveredNode]
+            const [hidden, , ,] = this.decodeNodeFlags(
+                this.graph.nodes.features[this.nodeFlagsFeatureId][
+                    this.hoveredNode
+                ]
             );
 
             if (!hidden) {
-                
                 nodesToRender.push(this.hoveredNode);
             }
         }
@@ -1510,24 +1514,39 @@ export default class OSigma<
      * @return {HTMLElement}
      */
     getContainer(): HTMLElement {
+        if (this.container == null) {
+            throw Error("Container is null");
+        }
+
         return this.container;
     }
 
-    /**
-     * Method returning the renderer's graph.
-     *
-     * @return {Graph}
-     */
-    getGraph(): GraphType {
+    getGraph(): OGraph<
+        TId,
+        TConnectionWeight,
+        TCoordinates,
+        TZIndex,
+        [...TNodeFeatures, ...TNodeVisual],
+        [...TConnectionFeatures, ...TConnectionVisual]
+    > {
         return this.graph;
     }
 
     /**
      * Method used to set the renderer's graph.
      *
-     * @return {Graph}
+     * @return {OGraph}
      */
-    setGraph(graph: GraphType): void {
+    setGraph(
+        graph: OGraph<
+            TId,
+            TConnectionWeight,
+            TCoordinates,
+            TZIndex,
+            [...TNodeFeatures, ...TNodeVisual],
+            [...TConnectionFeatures, ...TConnectionVisual]
+        >
+    ): void {
         if (graph === this.graph) return;
 
         // Unbinding handlers on the current graph
@@ -1630,18 +1649,18 @@ export default class OSigma<
     /**
      * Method used to get the set of currently displayed node labels.
      *
-     * @return {Set<string>} A set of node keys whose label is displayed.
+     * @return {Set<number>} A set of node keys whose label is displayed.
      */
-    getNodeDisplayedLabels(): Set<string> {
+    getNodeDisplayedLabels(): Set<number> {
         return new Set(this.displayedNodeLabels);
     }
 
     /**
      * Method used to get the set of currently displayed edge labels.
      *
-     * @return {Set<string>} A set of edge keys whose label is displayed.
+     * @return {Set<number>} A set of edge keys whose label is displayed.
      */
-    getEdgeDisplayedLabels(): Set<string> {
+    getEdgeDisplayedLabels(): Set<number> {
         return new Set(this.displayedEdgeLabels);
     }
 
@@ -1707,6 +1726,10 @@ export default class OSigma<
     resize(): this {
         const previousWidth = this.width,
             previousHeight = this.height;
+
+        if (this.container == null) {
+            throw Error("Container is null");
+        }
 
         this.width = this.container.offsetWidth;
         this.height = this.container.offsetHeight;
@@ -2128,8 +2151,10 @@ export default class OSigma<
         // Destroying canvases
         const container = this.container;
 
-        while (container.firstChild)
-            container.removeChild(container.firstChild);
+        if (container != null) {
+            while (container.firstChild)
+                container.removeChild(container.firstChild);
+        }
     }
 
     /**
