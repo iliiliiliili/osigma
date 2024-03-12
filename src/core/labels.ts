@@ -16,10 +16,10 @@ import { Dimensions, Coordinates } from "../types";
  * which one is better.
  */
 class LabelCandidate {
-    key: string;
+    key: number;
     size: number;
 
-    constructor(key: string, size: number) {
+    constructor(key: number, size: number) {
         this.key = key;
         this.size = size;
     }
@@ -68,7 +68,7 @@ export class LabelGrid {
         return yIndex * this.columns + xIndex;
     }
 
-    add(key: string, size: number, pos: Coordinates): void {
+    add(key: number, size: number, pos: Coordinates): void {
         const candidate = new LabelCandidate(key, size);
 
         const index = this.getIndex(pos);
@@ -89,7 +89,7 @@ export class LabelGrid {
         }
     }
 
-    getLabelsToDisplay(ratio: number, density: number): Array<string> {
+    getNodesWhichLabelsToDisplay(ratio: number, density: number): Array<number> {
         // TODO: work on visible nodes to optimize? ^ -> threshold outside so that memoization works?
         // TODO: adjust threshold lower, but increase cells a bit?
         // TODO: hunt for geom issue in disguise

@@ -8,22 +8,41 @@
 import { Settings } from "../../settings";
 import { NodeDisplayData, PartialButFor } from "../../types";
 
+// export default function drawLabel(
+//     context: CanvasRenderingContext2D,
+//     data: PartialButFor<NodeDisplayData, "x" | "y" | "size" | "label" | "color">,
+//     settings: Settings,
+// ): void {
+//     if (!data.label) return;
+
+//     const size = settings.labelSize,
+//         font = settings.labelFont,
+//         weight = settings.labelWeight,
+//         color = settings.labelColor.attribute
+//             ? data[settings.labelColor.attribute] || settings.labelColor.color || "#000"
+//             : settings.labelColor.color;
+
+//     context.fillStyle = color;
+//     context.font = `${weight} ${size}px ${font}`;
+
+//     context.fillText(data.label, data.x + data.size + 3, data.y + size / 3);
+// }
+
 export default function drawLabel(
     context: CanvasRenderingContext2D,
-    data: PartialButFor<NodeDisplayData, "x" | "y" | "size" | "label" | "color">,
+    label: string,
+    x: number,
+    y: number,
     settings: Settings,
 ): void {
-    if (!data.label) return;
 
     const size = settings.labelSize,
         font = settings.labelFont,
         weight = settings.labelWeight,
-        color = settings.labelColor.attribute
-            ? data[settings.labelColor.attribute] || settings.labelColor.color || "#000"
-            : settings.labelColor.color;
+        color = settings.labelColor.color || "#000"
 
     context.fillStyle = color;
     context.font = `${weight} ${size}px ${font}`;
 
-    context.fillText(data.label, data.x + data.size + 3, data.y + size / 3);
+    context.fillText(label, x + size + 3, y + size / 3);
 }

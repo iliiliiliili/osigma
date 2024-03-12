@@ -200,6 +200,7 @@ export interface NormalizationFunction {
     ratio: number;
     inverse(data: Coordinates): Coordinates;
     applyTo(data: Coordinates): void;
+    applyToAll<T extends TypedArray>(x: T, y: T): void;
 }
 export function createNormalizationFunction(extent: {
     x: Extent;
@@ -229,6 +230,15 @@ export function createNormalizationFunction(extent: {
     fn.applyTo = (data: Coordinates): void => {
         data.x = 0.5 + (data.x - dX) / ratio;
         data.y = 0.5 + (data.y - dY) / ratio;
+    };
+
+    fn.applyToAll = <T extends TypedArray>(x: T, y: T): void => {
+
+        for (let i = 0; i <= x.length; i++) {
+
+            x[i] = 0.5 + (x[i] - dX) / ratio;
+            y[i] = 0.5 + (y[i] - dY) / ratio;
+        } 
     };
 
     fn.inverse = (data: Coordinates): Coordinates => {

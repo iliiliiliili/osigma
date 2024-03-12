@@ -51,6 +51,7 @@ import {
     doEdgeCollideWithPoint,
     isPixelColored,
 } from "./utils/edge-collisions";
+import { decodeLabel, decodeColor } from "./value-choices";
 
 /**
  * Constants.
@@ -127,7 +128,7 @@ export default class OSigma<
     TCoordinates extends TypedArray,
     TZIndex extends TypedArray,
     TNodeFeatures extends TypedArray[],
-    TConnectionFeatures extends TypedArray[],
+    TConnectionFeatures extends TypedArray[]
 > extends TypedEventEmitter<OsigmaEvents> {
     private settings: Settings;
     private graph: OGraph<
@@ -149,8 +150,8 @@ export default class OSigma<
     private labelGrid: LabelGrid = new LabelGrid();
     private nodeDataCache: Record<string, NodeDisplayData> = {};
     private edgeDataCache: Record<string, EdgeDisplayData> = {};
-    private nodesWithForcedLabels: string[] = [];
-    private edgesWithForcedLabels: string[] = [];
+    private nodesWithForcedLabels: number[] = [];
+    private edgesWithForcedLabels: number[] = [];
     private nodeExtent: { x: Extent; y: Extent } = { x: [0, 1], y: [0, 1] };
 
     private matrix: Float32Array = identity();
@@ -172,9 +173,9 @@ export default class OSigma<
     private pixelRatio = getPixelRatio();
 
     // State
-    private displayedNodeLabels: Set<string> = new Set();
-    private displayedEdgeLabels: Set<string> = new Set();
-    private highlightedNodes: Set<string> = new Set();
+    private displayedNodeLabels: Set<number> = new Set();
+    private displayedEdgeLabels: Set<number> = new Set();
+    private highlightedNodes: Set<number> = new Set();
     private hoveredNode: number | null = null;
     private hoveredEdge: number | null = null;
     private renderFrame: number | null = null;
@@ -212,7 +213,7 @@ export default class OSigma<
         >,
         container: HTMLElement | null,
         settings: Partial<Settings> = {},
-        shouldDefaultGraphVisuals = true,
+        shouldDefaultGraphVisuals = true
     ) {
         super();
 
@@ -222,7 +223,7 @@ export default class OSigma<
         this.nodeLabelFeatureId = graph.nodes.features.length - 3;
         this.nodeSizeFeatureId = graph.nodes.features.length - 2;
         this.nodeFlagsFeatureId = graph.nodes.features.length - 1;
-        
+
         this.connectionColorFeatureId = graph.connections.features.length - 4;
         this.connectionLabelFeatureId = graph.connections.features.length - 3;
         this.connectionSizeFeatureId = graph.connections.features.length - 2;
@@ -233,15 +234,16 @@ export default class OSigma<
 
         // Validating
         validateSettings(this.settings);
-        if (!(container == null || (container instanceof HTMLElement)))
-            throw new Error("osigma: container should be an html element or null for headless tests.");
+        if (!(container == null || container instanceof HTMLElement))
+            throw new Error(
+                "osigma: container should be an html element or null for headless tests."
+            );
 
         // Properties
         this.graph = graph;
         this.container = container;
-        
-        if (container != null) {
 
+        if (container != null) {
             // Initializing contexts
             this.createWebGLContext("edges", { preserveDrawingBuffer: true });
             this.createCanvasContext("edgeLabels");
@@ -334,12 +336,11 @@ export default class OSigma<
         );
 
         this.elements[id] = canvas;
-        
+
         if (this.container == null) {
-            
             throw Error("Container is null");
         }
-    
+
         this.container.appendChild(canvas);
 
         return canvas;
@@ -919,26 +920,29 @@ export default class OSigma<
         const nodesPerPrograms: Record<string, number> = {};
 
         if (this.shouldDefaultGraphVisuals) {
-
             this.applyNodeDefaults(this.settings, this.graph);
         }
 
+        this.normalizationFunction.applyToAll(
+            graph.nodes.xCoordinates,
+            graph.nodes.yCoordinates
+        );
 
         for (let i = 0, l = this.graph.nodeCount; i < l; i++) {
+            const [, , forceLabel, nodeType] = this.decodeNodeFlags(
+                this.graph.nodes.features[this.nodeFlagsFeatureId][i]
+            );
 
-            const [hidden, highlighted, forceLabel, nodeType] = this.decodeNodeFlags(this.graph.nodes.features[this.nodeFlagsFeatureId][i]);
-
-            nodesPerPrograms[nodeType] =
-                (nodesPerPrograms[nodeType] || 0) + 1;
+            nodesPerPrograms[nodeType] = (nodesPerPrograms[nodeType] || 0) + 1;
             // this.nodeDataCache[node] = data;
 
-            this.normalizationFunction.applyTo(data);
-
-            if (forceLabel) this.nodesWithForcedLabels.push(node);
+            if (forceLabel) this.nodesWithForcedLabels.push(i);
 
             if (this.settings.zIndex) {
-                if (this.graph.nodes.zIndex[i] < nodeZExtent[0]) nodeZExtent[0] = this.graph.nodes.zIndex[i];
-                if (this.graph.nodes.zIndex[i] > nodeZExtent[1]) nodeZExtent[1] = this.graph.nodes.zIndex[i];
+                if (this.graph.nodes.zIndex[i] < nodeZExtent[0])
+                    nodeZExtent[0] = this.graph.nodes.zIndex[i];
+                if (this.graph.nodes.zIndex[i] > nodeZExtent[1])
+                    nodeZExtent[1] = this.graph.nodes.zIndex[i];
             }
         }
 
@@ -954,56 +958,70 @@ export default class OSigma<
             nodesPerPrograms[type] = 0;
         }
 
-        // Handling node z-index
-        // TODO: z-index needs us to compute display data before hand
-        if (this.settings.zIndex && nodeZExtent[0] !== nodeZExtent[1])
-            nodes = zIndexOrdering<string>(
-                nodeZExtent,
-                (node: string): number => this.nodeDataCache[node].zIndex,
-                nodes
-            );
+        // // Handling node z-index
+        // // TODO: z-index needs us to compute display data before hand
+        // if (this.settings.zIndex && nodeZExtent[0] !== nodeZExtent[1])
+        //     nodes = zIndexOrdering<string>(
+        //         nodeZExtent,
+        //         (node: string): number => this.nodeDataCache[node].zIndex,
+        //         nodes
+        //     );
 
         const normalizationRatio = this.normalizationFunction.ratio;
-        for (let i = 0, l = nodes.length; i < l; i++) {
-            const node = nodes[i];
-            const data = this.nodeDataCache[node];
+        for (let i = 0, l = graph.nodeCount; i < l; i++) {
+            // const node = nodes[i];
+            // const data = this.nodeDataCache[node];
 
             this.quadtree.add(
-                node,
-                data.x,
-                1 - data.y,
-                this.scaleSize(data.size, 1) / normalizationRatio
+                i,
+                graph.nodes.xCoordinates[i],
+                1 - graph.nodes.yCoordinates[i],
+                this.scaleSize(
+                    graph.nodes.features[this.nodeSizeFeatureId][i],
+                    1
+                ) / normalizationRatio
             );
 
-            if (typeof data.label === "string" && !data.hidden)
+            const [hidden, highlighted, , nodeType] = this.decodeNodeFlags(
+                this.graph.nodes.features[this.nodeFlagsFeatureId][i]
+            );
+
+            if (!hidden)
                 this.labelGrid.add(
-                    node,
-                    data.size,
-                    this.framedGraphToViewport(data, {
-                        matrix: nullCameraMatrix,
-                    })
+                    i,
+                    graph.nodes.features[this.nodeSizeFeatureId][i],
+                    this.framedGraphToViewport(
+                        {
+                            x: graph.nodes.xCoordinates[i],
+                            y: graph.nodes.yCoordinates[i],
+                        },
+                        {
+                            matrix: nullCameraMatrix,
+                        }
+                    )
                 );
 
-            const nodeProgram = this.nodePrograms[data.type];
+            const nodeProgram = this.nodePrograms[nodeType];
             if (!nodeProgram)
                 throw new Error(
-                    `osigma: could not find a suitable program for node type "${data.type}"!`
+                    `osigma: could not find a suitable program for node type "${nodeType}"!`
                 );
-            nodeProgram.process(nodesPerPrograms[data.type]++, data);
+            nodeProgram.process(nodesPerPrograms[nodeType]++, i);
 
             // Save the node in the highlighted set if needed
-            if (data.highlighted && !data.hidden)
-                this.highlightedNodes.add(node);
+            if (highlighted && !hidden)
+                this.highlightedNodes.add(i);
         }
 
         this.labelGrid.organize();
 
         const edgesPerPrograms: Record<string, number> = {};
 
-        let edges = graph.edges();
+        if (this.shouldDefaultGraphVisuals) {
+            this.applyEdgeDefaults(this.settings, this.graph);
+        }
 
-        for (let i = 0, l = edges.length; i < l; i++) {
-            const edge = edges[i];
+        for (let i = 0, l = graph.connectionCount; i < l; i++) {
 
             // Edge display data resolution:
             //   1. First we get the edge's attributes
@@ -1012,22 +1030,24 @@ export default class OSigma<
             //   3. We apply our defaults, while running some vital checks
 
             // We shallow copy edge data to avoid dangerous behaviors from reducers
-            let attr = Object.assign({}, graph.getEdgeAttributes(edge));
+            // let attr = Object.assign({}, graph.getEdgeAttributes(edge));
 
-            if (settings.edgeReducer) attr = settings.edgeReducer(edge, attr);
+            // if (settings.edgeReducer) attr = settings.edgeReducer(edge, attr);
+            
+            const [hidden, forceLabel, edgeType] = this.decodeEdgeFlags(
+                this.graph.nodes.features[this.nodeFlagsFeatureId][i]
+            );
 
-            const data = applyEdgeDefaults(this.settings, edge, attr);
+            edgesPerPrograms[edgeType] =
+                (edgesPerPrograms[edgeType] || 0) + 1;
+            // this.edgeDataCache[edge] = data;
 
-            edgesPerPrograms[data.type] =
-                (edgesPerPrograms[data.type] || 0) + 1;
-            this.edgeDataCache[edge] = data;
-
-            if (data.forceLabel && !data.hidden)
-                this.edgesWithForcedLabels.push(edge);
+            if (forceLabel && !hidden)
+                this.edgesWithForcedLabels.push(i);
 
             if (this.settings.zIndex) {
-                if (data.zIndex < edgeZExtent[0]) edgeZExtent[0] = data.zIndex;
-                if (data.zIndex > edgeZExtent[1]) edgeZExtent[1] = data.zIndex;
+                if (graph.connections.zIndex[i] < edgeZExtent[0]) edgeZExtent[0] = graph.connections.zIndex[i];
+                if (graph.connections.zIndex[i] > edgeZExtent[1]) edgeZExtent[1] = graph.connections.zIndex[i];
             }
         }
 
@@ -1043,27 +1063,19 @@ export default class OSigma<
             edgesPerPrograms[type] = 0;
         }
 
-        // Handling edge z-index
-        if (this.settings.zIndex && edgeZExtent[0] !== edgeZExtent[1])
-            edges = zIndexOrdering(
-                edgeZExtent,
-                (edge: string): number => this.edgeDataCache[edge].zIndex,
-                edges
-            );
+        // // Handling edge z-index
+        // if (this.settings.zIndex && edgeZExtent[0] !== edgeZExtent[1])
+        //     edges = zIndexOrdering(
+        //         edgeZExtent,
+        //         (edge: string): number => this.edgeDataCache[edge].zIndex,
+        //         edges
+        //     );
 
-        for (let i = 0, l = edges.length; i < l; i++) {
-            const edge = edges[i];
-            const data = this.edgeDataCache[edge];
-
-            const extremities = graph.extremities(edge),
-                sourceData = this.nodeDataCache[extremities[0]],
-                targetData = this.nodeDataCache[extremities[1]];
+        for (let i = 0, l = graph.connectionCount; i < l; i++) {
 
             this.edgePrograms[data.type].process(
                 edgesPerPrograms[data.type]++,
-                sourceData,
-                targetData,
-                data
+                i
             );
         }
 
@@ -1093,37 +1105,43 @@ export default class OSigma<
         const cameraState = this.camera.getState();
 
         // Selecting labels to draw
-        const labelsToDisplay = this.labelGrid.getLabelsToDisplay(
+        const nodesWhichLabelsToDisplay = this.labelGrid.getNodesWhichLabelsToDisplay(
             cameraState.ratio,
             this.settings.labelDensity
         );
-        extend(labelsToDisplay, this.nodesWithForcedLabels);
+        extend(nodesWhichLabelsToDisplay, this.nodesWithForcedLabels);
 
         this.displayedNodeLabels = new Set();
 
         // Drawing labels
         const context = this.canvasContexts.labels;
 
-        for (let i = 0, l = labelsToDisplay.length; i < l; i++) {
-            const node = labelsToDisplay[i];
-            const data = this.nodeDataCache[node];
+        for (let q = 0, l = nodesWhichLabelsToDisplay.length; q < l; q++) {
+            const nodeId = nodesWhichLabelsToDisplay[q];
 
             // If the node was already drawn (like if it is eligible AND has
             // `forceLabel`), we don't want to draw it again
             // NOTE: we can do better probably
-            if (this.displayedNodeLabels.has(node)) continue;
+            if (this.displayedNodeLabels.has(nodeId)) continue;
+
+            const [hidden, , forceLabel, nodeType] = this.decodeNodeFlags(
+                this.graph.nodes.features[this.nodeFlagsFeatureId][nodeId]
+            );
 
             // If the node is hidden, we don't need to display its label obviously
-            if (data.hidden) continue;
+            if (hidden) continue;
 
-            const { x, y } = this.framedGraphToViewport(data);
+            const { x, y } = this.framedGraphToViewport({
+                x: this.graph.nodes.xCoordinates[nodeId],
+                y: this.graph.nodes.yCoordinates[nodeId],
+            });
 
             // NOTE: we can cache the labels we need to render until the camera's ratio changes
-            const size = this.scaleSize(data.size);
+            const size = this.scaleSize(this.graph.nodes.features[this.nodeSizeFeatureId][nodeId]);
 
             // Is node big enough?
             if (
-                !data.forceLabel &&
+                !forceLabel &&
                 size < this.settings.labelRenderedSizeThreshold
             )
                 continue;
@@ -1150,17 +1168,13 @@ export default class OSigma<
             // is rendered.
             // This makes this.displayedNodeLabels depend on viewport, which might become
             // an issue once we start memoizing getLabelsToDisplay.
-            this.displayedNodeLabels.add(node);
+            this.displayedNodeLabels.add(nodeId);
 
             this.settings.labelRenderer(
                 context,
-                {
-                    key: node,
-                    ...data,
-                    size,
-                    x,
-                    y,
-                },
+                decodeLabel(this.graph.nodes.features[this.nodeLabelFeatureId][nodeId]),
+                x,
+                y,
                 this.settings
             );
         }
@@ -2144,49 +2158,53 @@ export default class OSigma<
         return { ...this.elements };
     }
 
-
-    public encodeNodeFlags(hidden: boolean, highlighted: boolean, forceLabel: boolean, nodeType: number): number {
-       
-        const result = (
+    public encodeNodeFlags(
+        hidden: boolean,
+        highlighted: boolean,
+        forceLabel: boolean,
+        nodeType: number
+    ): number {
+        const result =
             (hidden ? 1 : 0) |
             ((highlighted ? 1 : 0) << 1) |
             ((forceLabel ? 1 : 0) << 2) |
-            ((nodeType ? 1 : 0) << 3)
-        );
+            ((nodeType ? 1 : 0) << 3);
 
         return result;
     }
 
-    public decodeNodeFlags(nodeFlags: number): [boolean, boolean, boolean, number] {
-        
-        const hidden = ((nodeFlags) & 0b1) == 1;
+    public decodeNodeFlags(
+        nodeFlags: number
+    ): [boolean, boolean, boolean, number] {
+        const hidden = (nodeFlags & 0b1) == 1;
         const highlighted = ((nodeFlags >> 1) & 0b1) == 1;
         const forceLabel = ((nodeFlags >> 2) & 0b1) == 1;
-        const nodeType = ((nodeFlags >> 3) & 0b11);
-        
+        const nodeType = (nodeFlags >> 3) & 0b11;
+
         return [hidden, highlighted, forceLabel, nodeType];
     }
-    
-    public encodeEdgeFlags(hidden: boolean, forceLabel: boolean, nodeType: number): number {
-       
-        const result = (
+
+    public encodeEdgeFlags(
+        hidden: boolean,
+        forceLabel: boolean,
+        nodeType: number
+    ): number {
+        const result =
             (hidden ? 1 : 0) |
             ((forceLabel ? 1 : 0) << 1) |
-            ((nodeType ? 1 : 0) << 2)
-        );
+            ((nodeType ? 1 : 0) << 2);
 
         return result;
     }
 
     public decodeEdgeFlags(nodeFlags: number): [boolean, boolean, number] {
-        
-        const hidden = ((nodeFlags) & 0b1) == 1;
+        const hidden = (nodeFlags & 0b1) == 1;
         const forceLabel = ((nodeFlags >> 1) & 0b1) == 1;
-        const nodeType = ((nodeFlags >> 2) & 0b111);
-        
+        const nodeType = (nodeFlags >> 2) & 0b111;
+
         return [hidden, forceLabel, nodeType];
     }
-    
+
     protected applyNodeDefaults(
         settings: Settings,
         graph: OGraph<
@@ -2198,19 +2216,19 @@ export default class OSigma<
             [...TConnectionFeatures, ...TConnectionVisual]
         >
     ): void {
-
-
         const defaultNodeFlags = this.encodeNodeFlags(
             false,
             false,
             false,
-            settings.defaultNodeType,
+            settings.defaultNodeType
         );
 
-        for (let i = 0; i < graph.nodeCount; i ++) {
-            graph.nodes.features[this.nodeColorFeatureId][i] = settings.defaultNodeColor;
+        for (let i = 0; i < graph.nodeCount; i++) {
+            graph.nodes.features[this.nodeColorFeatureId][i] =
+                settings.defaultNodeColor;
             graph.nodes.features[this.nodeLabelFeatureId][i] = 0;
-            graph.nodes.features[this.nodeSizeFeatureId][i] = settings.defaultNodeSize;
+            graph.nodes.features[this.nodeSizeFeatureId][i] =
+                settings.defaultNodeSize;
             graph.nodes.features[this.nodeFlagsFeatureId][i] = defaultNodeFlags;
             graph.nodes.zIndex[i] = 0;
         }
@@ -2227,18 +2245,20 @@ export default class OSigma<
             [...TConnectionFeatures, ...TConnectionVisual]
         >
     ): void {
-
         const defaultEdgeFlags = this.encodeEdgeFlags(
             false,
             false,
-            settings.defaultEdgeType,
+            settings.defaultEdgeType
         );
 
-        for (let i = 0; i < graph.nodeCount; i ++) {
-            graph.connections.features[this.connectionColorFeatureId][i] = settings.defaultNodeColor;
+        for (let i = 0; i < graph.nodeCount; i++) {
+            graph.connections.features[this.connectionColorFeatureId][i] =
+                settings.defaultNodeColor;
             graph.connections.features[this.connectionLabelFeatureId][i] = 0;
-            graph.connections.features[this.connectionSizeFeatureId][i] = settings.defaultNodeSize;
-            graph.connections.features[this.connectionFlagsFeatureId][i] = defaultEdgeFlags;
+            graph.connections.features[this.connectionSizeFeatureId][i] =
+                settings.defaultNodeSize;
+            graph.connections.features[this.connectionFlagsFeatureId][i] =
+                defaultEdgeFlags;
             graph.connections.zIndex[i] = 0;
         }
     }
