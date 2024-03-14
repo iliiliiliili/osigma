@@ -7,16 +7,31 @@
  * useful classes as static properties.
  * @module
  */
-import OsigmaClass from "./osigma";
+import OSigmaClass from "./osigma";
 import Camera from "./core/camera";
 import QuadTree from "./core/quadtree";
 import MouseCaptor from "./core/captors/mouse";
+import { TypedArray } from "./core/ograph";
 
-class osigma extends OsigmaClass {
+class OSigma<
+    TId extends TypedArray,
+    TConnectionWeight extends TypedArray,
+    TCoordinates extends TypedArray,
+    TZIndex extends TypedArray,
+    TNodeFeatures extends TypedArray[],
+    TConnectionFeatures extends TypedArray[]
+> extends OSigmaClass<
+    TId,
+    TConnectionWeight,
+    TCoordinates,
+    TZIndex,
+    TNodeFeatures,
+    TConnectionFeatures
+> {
     static Camera = Camera;
     static QuadTree = QuadTree;
     static MouseCaptor = MouseCaptor;
-    static osigma = OsigmaClass;
+    static osigma = OSigmaClass;
 }
 
-module.exports = osigma;
+module.exports = OSigma;

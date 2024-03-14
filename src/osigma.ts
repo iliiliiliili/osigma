@@ -1070,8 +1070,11 @@ export default class OSigma<
         //     );
 
         for (let i = 0, l = graph.connectionCount; i < l; i++) {
-            this.edgePrograms[data.type].process(
-                edgesPerPrograms[data.type]++,
+            const [, , edgeType] = this.decodeEdgeFlags(
+                this.graph.nodes.features[this.nodeFlagsFeatureId][i]
+            );
+            this.edgePrograms[edgeType].process(
+                edgesPerPrograms[edgeType]++,
                 i
             );
         }
@@ -1190,65 +1193,65 @@ export default class OSigma<
      */
     private renderEdgeLabels(): this {
         return this;
-        if (!this.settings.renderEdgeLabels) return this;
+        // if (!this.settings.renderEdgeLabels) return this;
 
-        const context = this.canvasContexts.edgeLabels;
+        // const context = this.canvasContexts.edgeLabels;
 
-        // Clearing
-        context.clearRect(0, 0, this.width, this.height);
+        // // Clearing
+        // context.clearRect(0, 0, this.width, this.height);
 
-        const edgeLabelsToDisplay = edgeLabelsToDisplayFromNodes({
-            graph: this.graph,
-            hoveredNode: this.hoveredNode,
-            displayedNodeLabels: this.displayedNodeLabels,
-            highlightedNodes: this.highlightedNodes,
-        }).concat(this.edgesWithForcedLabels);
-        const displayedLabels = new Set<string>();
+        // const edgeLabelsToDisplay = edgeLabelsToDisplayFromNodes({
+        //     graph: this.graph,
+        //     hoveredNode: this.hoveredNode,
+        //     displayedNodeLabels: this.displayedNodeLabels,
+        //     highlightedNodes: this.highlightedNodes,
+        // }).concat(this.edgesWithForcedLabels);
+        // const displayedLabels = new Set<string>();
 
-        for (let i = 0, l = edgeLabelsToDisplay.length; i < l; i++) {
-            const edge = edgeLabelsToDisplay[i],
-                extremities = this.graph.extremities(edge),
-                sourceData = this.nodeDataCache[extremities[0]],
-                targetData = this.nodeDataCache[extremities[1]],
-                edgeData = this.edgeDataCache[edge];
+        // for (let i = 0, l = edgeLabelsToDisplay.length; i < l; i++) {
+        //     const edge = edgeLabelsToDisplay[i],
+        //         extremities = this.graph.extremities(edge),
+        //         sourceData = this.nodeDataCache[extremities[0]],
+        //         targetData = this.nodeDataCache[extremities[1]],
+        //         edgeData = this.edgeDataCache[edge];
 
-            // If the edge was already drawn (like if it is eligible AND has
-            // `forceLabel`), we don't want to draw it again
-            if (displayedLabels.has(edge)) continue;
+        //     // If the edge was already drawn (like if it is eligible AND has
+        //     // `forceLabel`), we don't want to draw it again
+        //     if (displayedLabels.has(edge)) continue;
 
-            // If the edge is hidden we don't need to display its label
-            // NOTE: the test on sourceData & targetData is probably paranoid at this point?
-            if (edgeData.hidden || sourceData.hidden || targetData.hidden) {
-                continue;
-            }
+        //     // If the edge is hidden we don't need to display its label
+        //     // NOTE: the test on sourceData & targetData is probably paranoid at this point?
+        //     if (edgeData.hidden || sourceData.hidden || targetData.hidden) {
+        //         continue;
+        //     }
 
-            this.settings.edgeLabelRenderer(
-                context,
-                {
-                    key: edge,
-                    ...edgeData,
-                    size: this.scaleSize(edgeData.size),
-                },
-                {
-                    key: extremities[0],
-                    ...sourceData,
-                    ...this.framedGraphToViewport(sourceData),
-                    size: this.scaleSize(sourceData.size),
-                },
-                {
-                    key: extremities[1],
-                    ...targetData,
-                    ...this.framedGraphToViewport(targetData),
-                    size: this.scaleSize(targetData.size),
-                },
-                this.settings
-            );
-            displayedLabels.add(edge);
-        }
+        //     this.settings.edgeLabelRenderer(
+        //         context,
+        //         {
+        //             key: edge,
+        //             ...edgeData,
+        //             size: this.scaleSize(edgeData.size),
+        //         },
+        //         {
+        //             key: extremities[0],
+        //             ...sourceData,
+        //             ...this.framedGraphToViewport(sourceData),
+        //             size: this.scaleSize(sourceData.size),
+        //         },
+        //         {
+        //             key: extremities[1],
+        //             ...targetData,
+        //             ...this.framedGraphToViewport(targetData),
+        //             size: this.scaleSize(targetData.size),
+        //         },
+        //         this.settings
+        //     );
+        //     displayedLabels.add(edge);
+        // }
 
-        this.displayedEdgeLabels = displayedLabels;
+        // this.displayedEdgeLabels = displayedLabels;
 
-        return this;
+        // return this;
     }
 
     /**

@@ -95,13 +95,13 @@ describe("QuadTree geometry utils", () => {
 describe("QuadTree", function () {
     const nodes = [
         {
-            key: "a",
+            key: 12,
             x: 394,
             y: 10,
             size: 1,
         },
         {
-            key: "b",
+            key: 14,
             x: 12,
             y: 10,
             size: 3,

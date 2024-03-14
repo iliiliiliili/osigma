@@ -520,20 +520,3 @@ export function canUse32BitsIndices(gl: WebGLRenderingContext): boolean {
 
     return webgl2 || !!gl.getExtension("OES_element_index_uint");
 }
-
-/**
- * Check if the graph variable is a valid graph, and if osigma can render it.
- */
-export function validateGraph(graph: Graph): void {
-    // check if it's a valid graphology instance
-    if (!isGraph(graph)) throw new Error("osigma: invalid graph instance.");
-
-    // check if nodes have x/y attributes
-    graph.forEachNode((key: string, attributes: Attributes) => {
-        if (!Number.isFinite(attributes.x) || !Number.isFinite(attributes.y)) {
-            throw new Error(
-                `osigma: Coordinates of node ${key} are invalid. A node must have a numeric 'x' and 'y' attribute.`
-            );
-        }
-    });
-}
