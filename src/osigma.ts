@@ -2299,4 +2299,32 @@ export default class OSigma<
             graph.connections.zIndex[i] = 0;
         }
     }
+
+    public isNodeHidden(nodeId: number) {
+        return (this.graph.nodes.features[this.nodeFlagsFeatureId][nodeId] & 0b1) == 1
+    }
+
+    public isNodeHighlighted(nodeId: number) {
+        return ((this.graph.nodes.features[this.nodeFlagsFeatureId][nodeId] >> 1) & 0b1) == 1
+    }
+
+    public isNodeForceLabeled(nodeId: number) {
+        return ((this.graph.nodes.features[this.nodeFlagsFeatureId][nodeId] >> 2) & 0b1) == 1
+    }
+
+    public getNodeType(nodeId: number) {
+        return (this.graph.nodes.features[this.nodeFlagsFeatureId][nodeId] >> 3) & 0b11
+    }
+    
+    public isEdgeHidden(edgeId: number) {
+        return (this.graph.connections.features[this.connectionFlagsFeatureId][edgeId] & 0b1) == 1
+    }
+    
+    public isEdgeForceLabeled(edgeId: number) {
+        return ((this.graph.connections.features[this.connectionFlagsFeatureId][edgeId] >> 1) & 0b1) == 1
+    }
+
+    public getEdgeType(edgeId: number) {
+        return (this.graph.connections.features[this.connectionFlagsFeatureId][edgeId] >> 2) & 0b111
+    }
 }

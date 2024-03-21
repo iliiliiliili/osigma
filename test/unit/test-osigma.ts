@@ -86,6 +86,49 @@ describe("osigma internal functions", () => {
             });
         });
     });
+    it("should get separate node flag properties correctly", () => {
+        const graph = createDefaultGraph();
+
+        const osigma = new OSigma(graph, null);
+
+        const allHidden = [true, false];
+        const allHighlighted = [true, false];
+        const allForceLabel = [true, false];
+        const allNodeType = [0, 1, 2, 3];
+
+        allHidden.forEach((hidden) => {
+            allHighlighted.forEach((highlighted) => {
+                allForceLabel.forEach((forceLabel) => {
+                    allNodeType.forEach((nodeType) => {
+                        const input = [
+                            hidden,
+                            highlighted,
+                            forceLabel,
+                            nodeType,
+                        ] as const;
+
+                        const encoded = osigma.encodeNodeFlags(...input);
+                        const nodeId = 0;
+                        
+                        osigma.getGraph().nodes.features[osigma.nodeFlagsFeatureId][nodeId] = encoded;
+
+                        const decoded = [
+                            osigma.isNodeHidden(nodeId),
+                            osigma.isNodeHighlighted(nodeId),
+                            osigma.isNodeForceLabeled(nodeId),
+                            osigma.getNodeType(nodeId),
+                        ];
+
+                        assert.deepEqual(
+                            input,
+                            decoded,
+                            `${input} have been encode-decoded into ${decoded}`
+                        );
+                    });
+                });
+            });
+        });
+    });
     it("should encode and decode edge flags correctly", () => {
         const graph = createDefaultGraph();
 
@@ -107,6 +150,44 @@ describe("osigma internal functions", () => {
                     const encoded = osigma.encodeEdgeFlags(...input);
 
                     const decoded = osigma.decodeEdgeFlags(encoded);
+
+                    assert.deepEqual(
+                        input,
+                        decoded,
+                        `${input} have been encode-decoded into ${decoded}`
+                    );
+                });
+            });
+        });
+    });
+    it("should get separate edge flag properties correctly", () => {
+        const graph = createDefaultGraph();
+
+        const osigma = new OSigma(graph, null);
+
+        const allHidden = [true, false];
+        const allForceLabel = [true, false];
+        const allNodeType = [0, 1, 2, 3];
+
+        allHidden.forEach((hidden) => {
+            allForceLabel.forEach((forceLabel) => {
+                allNodeType.forEach((nodeType) => {
+                    const input = [
+                        hidden,
+                        forceLabel,
+                        nodeType,
+                    ] as const;
+
+                    const encoded = osigma.encodeEdgeFlags(...input);
+                    const connectionId = 0;
+                    
+                    osigma.getGraph().nodes.features[osigma.nodeFlagsFeatureId][connectionId] = encoded;
+
+                    const decoded = [
+                        osigma.isEdgeHidden(connectionId),
+                        osigma.isNodeHighlighted(connectionId),
+                        osigma.getEdgeType(connectionId),
+                    ];
 
                     assert.deepEqual(
                         input,
