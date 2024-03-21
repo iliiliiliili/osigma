@@ -6,7 +6,7 @@
  * state.
  * @module
  */
-import { Settings } from "../../settings";
+import { ValueSettings } from "../../settings";
 import { NodeDisplayData, PartialButFor } from "../../types";
 import drawLabel from "./label";
 
@@ -22,7 +22,7 @@ export default function drawHover(
     x: number,
     y: number,
     nodeSize: number,
-    settings: Settings
+    settings: ValueSettings
 ): void {
     const labelSize = settings.labelSize,
         font = settings.labelFont,

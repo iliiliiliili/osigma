@@ -6,42 +6,104 @@
  */
 import OSigma from "../../../../osigma";
 import { AbstractProgram, Program } from "./program";
-import { NodeDisplayData, EdgeDisplayData, RenderParams } from "../../../../types";
+import { TypedArray } from "../../../../core/ograph";
+import {
+    NodeDisplayData,
+    EdgeDisplayData,
+    RenderParams,
+} from "../../../../types";
 
-export abstract class AbstractEdgeProgram extends AbstractProgram {
-    abstract process(
-        offset: number,
-        sourceData: NodeDisplayData,
-        targetData: NodeDisplayData,
-        data: EdgeDisplayData,
-    ): void;
+export abstract class AbstractEdgeProgram<
+    TId extends TypedArray,
+    TConnectionWeight extends TypedArray,
+    TCoordinates extends TypedArray,
+    TZIndex extends TypedArray,
+    TNodeFeatures extends TypedArray[],
+    TConnectionFeatures extends TypedArray[]
+> extends AbstractProgram<
+    TId,
+    TConnectionWeight,
+    TCoordinates,
+    TZIndex,
+    TNodeFeatures,
+    TConnectionFeatures
+> {
+    abstract process(offset: number, edgeId: number): void;
 }
 
-export abstract class EdgeProgram<Uniform extends string = string>
-    extends Program<Uniform>
-    implements AbstractEdgeProgram {
-    process(offset: number, sourceData: NodeDisplayData, targetData: NodeDisplayData, data: EdgeDisplayData): void {
+export abstract class EdgeProgram<
+        TId extends TypedArray,
+        TConnectionWeight extends TypedArray,
+        TCoordinates extends TypedArray,
+        TZIndex extends TypedArray,
+        TNodeFeatures extends TypedArray[],
+        TConnectionFeatures extends TypedArray[],
+        Uniform extends string = string
+    >
+    extends Program<
+        TId,
+        TConnectionWeight,
+        TCoordinates,
+        TZIndex,
+        TNodeFeatures,
+        TConnectionFeatures,
+        Uniform
+    >
+    implements
+        AbstractEdgeProgram<
+            TId,
+            TConnectionWeight,
+            TCoordinates,
+            TZIndex,
+            TNodeFeatures,
+            TConnectionFeatures
+        >
+{
+    process(offset: number, edgeId: number): void {
         let i = offset * this.STRIDE;
         // NOTE: dealing with hidden items automatically
-        if (data.hidden || sourceData.hidden || targetData.hidden) {
+        if (
+            this.renderer.isEdgeHidden(edgeId) ||
+            this.renderer.isNodeHidden(this.graph.connections.from[edgeId]) ||
+            this.renderer.isNodeHidden(this.graph.connections.to[edgeId])
+        ) {
             for (let l = i + this.STRIDE; i < l; i++) {
                 this.array[i] = 0;
             }
             return;
         }
 
-        return this.processVisibleItem(i, sourceData, targetData, data);
+        return this.processVisibleItem(i, edgeId);
     }
-    abstract processVisibleItem(
-        i: number,
-        sourceData: NodeDisplayData,
-        targetData: NodeDisplayData,
-        data: EdgeDisplayData,
-    ): void;
+    abstract processVisibleItem(i: number, edgeId: number): void;
 }
 
-export interface EdgeProgramConstructor {
-    new(gl: WebGLRenderingContext, renderer: OSigma): AbstractEdgeProgram;
+export interface EdgeProgramConstructor<
+    TId extends TypedArray,
+    TConnectionWeight extends TypedArray,
+    TCoordinates extends TypedArray,
+    TZIndex extends TypedArray,
+    TNodeFeatures extends TypedArray[],
+    TConnectionFeatures extends TypedArray[]
+> {
+    new (
+        gl: WebGLRenderingContext,
+        renderer: OSigma<
+            TId,
+            TConnectionWeight,
+            TCoordinates,
+            TZIndex,
+            TNodeFeatures,
+            TConnectionFeatures
+        >
+    ): AbstractEdgeProgram<
+        TId,
+        TConnectionWeight,
+        TCoordinates,
+        TZIndex,
+        TNodeFeatures,
+        TConnectionFeatures
+    >;
 }
 
 /**
@@ -52,11 +114,65 @@ export interface EdgeProgramConstructor {
  * @param  {array}    programClasses - Program classes to combine.
  * @return {function}
  */
-export function createEdgeCompoundProgram(programClasses: Array<EdgeProgramConstructor>): EdgeProgramConstructor {
-    return class EdgeCompoundProgram implements AbstractEdgeProgram {
-        programs: Array<AbstractEdgeProgram>;
+export function createEdgeCompoundProgram<
+    TId extends TypedArray,
+    TConnectionWeight extends TypedArray,
+    TCoordinates extends TypedArray,
+    TZIndex extends TypedArray,
+    TNodeFeatures extends TypedArray[],
+    TConnectionFeatures extends TypedArray[]
+>(
+    programClasses: Array<
+        EdgeProgramConstructor<
+            TId,
+            TConnectionWeight,
+            TCoordinates,
+            TZIndex,
+            TNodeFeatures,
+            TConnectionFeatures
+        >
+    >
+): EdgeProgramConstructor<
+    TId,
+    TConnectionWeight,
+    TCoordinates,
+    TZIndex,
+    TNodeFeatures,
+    TConnectionFeatures
+> {
+    return class EdgeCompoundProgram
+        implements
+            AbstractEdgeProgram<
+                TId,
+                TConnectionWeight,
+                TCoordinates,
+                TZIndex,
+                TNodeFeatures,
+                TConnectionFeatures
+            >
+    {
+        programs: Array<
+            AbstractEdgeProgram<
+                TId,
+                TConnectionWeight,
+                TCoordinates,
+                TZIndex,
+                TNodeFeatures,
+                TConnectionFeatures
+            >
+        >;
 
-        constructor(gl: WebGLRenderingContext, renderer: OSigma) {
+        constructor(
+            gl: WebGLRenderingContext,
+            renderer: OSigma<
+                TId,
+                TConnectionWeight,
+                TCoordinates,
+                TZIndex,
+                TNodeFeatures,
+                TConnectionFeatures
+            >
+        ) {
             this.programs = programClasses.map((Program) => {
                 return new Program(gl, renderer);
             });
@@ -66,8 +182,13 @@ export function createEdgeCompoundProgram(programClasses: Array<EdgeProgramConst
             this.programs.forEach((program) => program.reallocate(capacity));
         }
 
-        process(offset: number, sourceData: NodeDisplayData, targetData: NodeDisplayData, data: EdgeDisplayData): void {
-            this.programs.forEach((program) => program.process(offset, sourceData, targetData, data));
+        process(
+            offset: number,
+            edgeId: number,
+        ): void {
+            this.programs.forEach((program) =>
+                program.process(offset, edgeId)
+            );
         }
 
         render(params: RenderParams): void {

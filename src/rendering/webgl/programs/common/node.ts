@@ -5,33 +5,97 @@
  * @module
  */
 import OSigma from "../../../../osigma";
+import { TypedArray } from "../../../../core/ograph";
 import { AbstractProgram, Program } from "./program";
 import { NodeDisplayData, RenderParams } from "../../../../types";
 
-export abstract class AbstractNodeProgram extends AbstractProgram {
-    abstract process(offset: number, data: NodeDisplayData): void;
+export abstract class AbstractNodeProgram<
+    TId extends TypedArray,
+    TConnectionWeight extends TypedArray,
+    TCoordinates extends TypedArray,
+    TZIndex extends TypedArray,
+    TNodeFeatures extends TypedArray[],
+    TConnectionFeatures extends TypedArray[]
+> extends AbstractProgram<
+    TId,
+    TConnectionWeight,
+    TCoordinates,
+    TZIndex,
+    TNodeFeatures,
+    TConnectionFeatures
+> {
+    abstract process(offset: number, nodeId: number): void;
 }
 
-export abstract class NodeProgram<Uniform extends string = string>
-    extends Program<Uniform>
-    implements AbstractNodeProgram {
-    process(offset: number, data: NodeDisplayData): void {
+export abstract class NodeProgram<
+        TId extends TypedArray,
+        TConnectionWeight extends TypedArray,
+        TCoordinates extends TypedArray,
+        TZIndex extends TypedArray,
+        TNodeFeatures extends TypedArray[],
+        TConnectionFeatures extends TypedArray[],
+        Uniform extends string = string
+    >
+    extends Program<
+        TId,
+        TConnectionWeight,
+        TCoordinates,
+        TZIndex,
+        TNodeFeatures,
+        TConnectionFeatures,
+        Uniform
+    >
+    implements
+        AbstractNodeProgram<
+            TId,
+            TConnectionWeight,
+            TCoordinates,
+            TZIndex,
+            TNodeFeatures,
+            TConnectionFeatures
+        >
+{
+    process(offset: number, nodeId: number): void {
         let i = offset * this.STRIDE;
         // NOTE: dealing with hidden items automatically
-        if (data.hidden) {
+        if (this.renderer.isNodeHidden(nodeId)) {
             for (let l = i + this.STRIDE; i < l; i++) {
                 this.array[i] = 0;
             }
             return;
         }
 
-        return this.processVisibleItem(i, data);
+        return this.processVisibleItem(i, nodeId);
     }
-    abstract processVisibleItem(i: number, data: NodeDisplayData): void;
+    abstract processVisibleItem(i: number, data: number): void;
 }
 
-export interface NodeProgramConstructor {
-    new(gl: WebGLRenderingContext, renderer: OSigma): AbstractNodeProgram;
+export interface NodeProgramConstructor<
+    TId extends TypedArray,
+    TConnectionWeight extends TypedArray,
+    TCoordinates extends TypedArray,
+    TZIndex extends TypedArray,
+    TNodeFeatures extends TypedArray[],
+    TConnectionFeatures extends TypedArray[]
+> {
+    new (
+        gl: WebGLRenderingContext,
+        renderer: OSigma<
+            TId,
+            TConnectionWeight,
+            TCoordinates,
+            TZIndex,
+            TNodeFeatures,
+            TConnectionFeatures
+        >
+    ): AbstractNodeProgram<
+        TId,
+        TConnectionWeight,
+        TCoordinates,
+        TZIndex,
+        TNodeFeatures,
+        TConnectionFeatures
+    >;
 }
 
 /**
@@ -42,11 +106,65 @@ export interface NodeProgramConstructor {
  * @param  {array}    programClasses - Program classes to combine.
  * @return {function}
  */
-export function createNodeCompoundProgram(programClasses: Array<NodeProgramConstructor>): NodeProgramConstructor {
-    return class NodeCompoundProgram implements AbstractNodeProgram {
-        programs: Array<AbstractNodeProgram>;
+export function createNodeCompoundProgram<
+    TId extends TypedArray,
+    TConnectionWeight extends TypedArray,
+    TCoordinates extends TypedArray,
+    TZIndex extends TypedArray,
+    TNodeFeatures extends TypedArray[],
+    TConnectionFeatures extends TypedArray[]
+>(
+    programClasses: Array<
+        NodeProgramConstructor<
+            TId,
+            TConnectionWeight,
+            TCoordinates,
+            TZIndex,
+            TNodeFeatures,
+            TConnectionFeatures
+        >
+    >
+): NodeProgramConstructor<
+    TId,
+    TConnectionWeight,
+    TCoordinates,
+    TZIndex,
+    TNodeFeatures,
+    TConnectionFeatures
+> {
+    return class NodeCompoundProgram
+        implements
+            AbstractNodeProgram<
+                TId,
+                TConnectionWeight,
+                TCoordinates,
+                TZIndex,
+                TNodeFeatures,
+                TConnectionFeatures
+            >
+    {
+        programs: Array<
+            AbstractNodeProgram<
+                TId,
+                TConnectionWeight,
+                TCoordinates,
+                TZIndex,
+                TNodeFeatures,
+                TConnectionFeatures
+            >
+        >;
 
-        constructor(gl: WebGLRenderingContext, renderer: OSigma) {
+        constructor(
+            gl: WebGLRenderingContext,
+            renderer: OSigma<
+                TId,
+                TConnectionWeight,
+                TCoordinates,
+                TZIndex,
+                TNodeFeatures,
+                TConnectionFeatures
+            >
+        ) {
             this.programs = programClasses.map((Program) => {
                 return new Program(gl, renderer);
             });
@@ -56,8 +174,8 @@ export function createNodeCompoundProgram(programClasses: Array<NodeProgramConst
             this.programs.forEach((program) => program.reallocate(capacity));
         }
 
-        process(offset: number, data: NodeDisplayData): void {
-            this.programs.forEach((program) => program.process(offset, data));
+        process(offset: number, nodeId: number): void {
+            this.programs.forEach((program) => program.process(offset, nodeId));
         }
 
         render(params: RenderParams): void {

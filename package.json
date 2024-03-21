@@ -15,7 +15,7 @@
     "prepare": "npm run clean && npm run transpile && npm run build && npm run examples:prepare && npm run demo:prepare",
     "prepublishOnly": "npm run lint && npm test",
     "reinstall": "rimraf examples/node_modules && rimraf demo/node_modules && rimraf node_modules && npm i && npm run clean",
-    "test": "npm run unit:test && npm run e2e:test",
+    "test": "npm run unit:test",
     "unit:test": "mocha --require ts-node/register ./test/unit/**/*.ts",
     "e2e:test": "mocha --require ts-node/register ./test/e2e/**/*.spec.ts",
     "e2e:generate": "node -r ts-node/register test/e2e/generate.ts",

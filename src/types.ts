@@ -35,8 +35,8 @@ export interface CameraState extends Coordinates {
 export type MouseInteraction = "click" | "doubleClick" | "rightClick" | "wheel" | "down";
 
 export interface MouseCoords extends Coordinates {
-    OsigmaDefaultPrevented: boolean;
-    preventOsigmaDefault(): void;
+    OSigmaDefaultPrevented: boolean;
+    preventOSigmaDefault(): void;
     original: MouseEvent;
 }
 

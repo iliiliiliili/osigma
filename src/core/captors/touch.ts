@@ -8,12 +8,15 @@
 import { CameraState, Coordinates, Dimensions, TouchCoords } from "../../types";
 import Captor, { getPosition, getTouchCoords, getTouchesArray } from "./captor";
 import OSigma from "../../osigma";
+import { TypedArray } from "../../core/ograph";
 
 const DRAG_TIMEOUT = 200;
 const TOUCH_INERTIA_RATIO = 3;
 const TOUCH_INERTIA_DURATION = 200;
 
-export type FakeOsigmaMouseEvent = MouseEvent & { isFakeOsigmaMouseEvent?: true };
+export type FakeOSigmaMouseEvent = MouseEvent & {
+    isFakeOSigmaMouseEvent?: true;
+};
 
 /**
  * Event types.
@@ -29,7 +32,22 @@ export type TouchCaptorEvents = {
  *
  * @constructor
  */
-export default class TouchCaptor extends Captor<TouchCaptorEvents> {
+export default class TouchCaptor<
+    TId extends TypedArray,
+    TConnectionWeight extends TypedArray,
+    TCoordinates extends TypedArray,
+    TZIndex extends TypedArray,
+    TNodeFeatures extends TypedArray[],
+    TConnectionFeatures extends TypedArray[]
+> extends Captor<
+    TId,
+    TConnectionWeight,
+    TCoordinates,
+    TZIndex,
+    TNodeFeatures,
+    TConnectionFeatures,
+    TouchCaptorEvents
+> {
     enabled = true;
     isMoving = false;
     hasMoved = false;
@@ -43,7 +61,14 @@ export default class TouchCaptor extends Captor<TouchCaptorEvents> {
     lastTouchesPositions?: Coordinates[];
     lastTouches?: Touch[];
 
-    constructor(container: HTMLElement, renderer: OSigma) {
+    constructor(container: HTMLElement, renderer: OSigma<
+        TId,
+        TConnectionWeight,
+        TCoordinates,
+        TZIndex,
+        TNodeFeatures,
+        TConnectionFeatures
+    >) {
         super(container, renderer);
 
         // Binding methods:
@@ -52,19 +77,19 @@ export default class TouchCaptor extends Captor<TouchCaptorEvents> {
         this.handleMove = this.handleMove.bind(this);
 
         // Binding events
-        container.addEventListener("touchstart", this.handleStart, false);
-        container.addEventListener("touchend", this.handleLeave, false);
-        container.addEventListener("touchcancel", this.handleLeave, false);
-        container.addEventListener("touchmove", this.handleMove, false);
+        container?.addEventListener("touchstart", this.handleStart, false);
+        container?.addEventListener("touchend", this.handleLeave, false);
+        container?.addEventListener("touchcancel", this.handleLeave, false);
+        container?.addEventListener("touchmove", this.handleMove, false);
     }
 
     kill(): void {
         const container = this.container;
 
-        container.removeEventListener("touchstart", this.handleStart);
-        container.removeEventListener("touchend", this.handleLeave);
-        container.removeEventListener("touchcancel", this.handleLeave);
-        container.removeEventListener("touchmove", this.handleMove);
+        container?.removeEventListener("touchstart", this.handleStart);
+        container?.removeEventListener("touchend", this.handleLeave);
+        container?.removeEventListener("touchcancel", this.handleLeave);
+        container?.removeEventListener("touchmove", this.handleMove);
     }
 
     getDimensions(): Dimensions {
@@ -74,7 +99,12 @@ export default class TouchCaptor extends Captor<TouchCaptorEvents> {
         };
     }
 
-    dispatchRelatedMouseEvent(type: string, e: TouchEvent, touch?: Touch, emitter?: EventTarget): void {
+    dispatchRelatedMouseEvent(
+        type: string,
+        e: TouchEvent,
+        touch?: Touch,
+        emitter?: EventTarget
+    ): void {
         const mousePosition = touch || e.touches[0];
         const mouseEvent = new MouseEvent(type, {
             clientX: mousePosition.clientX,
@@ -83,7 +113,7 @@ export default class TouchCaptor extends Captor<TouchCaptorEvents> {
             ctrlKey: e.ctrlKey,
         });
 
-        (mouseEvent as FakeOsigmaMouseEvent).isFakeOsigmaMouseEvent = true;
+        (mouseEvent as FakeOSigmaMouseEvent).isFakeOSigmaMouseEvent = true;
 
         (emitter || this.container).dispatchEvent(mouseEvent);
     }
@@ -94,21 +124,27 @@ export default class TouchCaptor extends Captor<TouchCaptorEvents> {
         // Prevent default to avoid default browser behaviors...
         e.preventDefault();
         // ...but simulate mouse behavior anyway, to get the MouseCaptor working as well:
-        if (e.touches.length === 1) this.dispatchRelatedMouseEvent("mousedown", e);
+        if (e.touches.length === 1)
+            this.dispatchRelatedMouseEvent("mousedown", e);
 
         const touches = getTouchesArray(e.touches);
         this.touchMode = touches.length;
 
         this.startCameraState = this.renderer.getCamera().getState();
-        this.startTouchesPositions = touches.map((touch) => getPosition(touch, this.container));
+        this.startTouchesPositions = touches.map((touch) =>
+            getPosition(touch, this.container)
+        );
         this.lastTouches = touches;
         this.lastTouchesPositions = this.startTouchesPositions;
 
         // When there are two touches down, let's record distance and angle as well:
         if (this.touchMode === 2) {
-            const [{ x: x0, y: y0 }, { x: x1, y: y1 }] = this.startTouchesPositions;
+            const [{ x: x0, y: y0 }, { x: x1, y: y1 }] =
+                this.startTouchesPositions;
             this.startTouchesAngle = Math.atan2(y1 - y0, x1 - x0);
-            this.startTouchesDistance = Math.sqrt(Math.pow(x1 - x0, 2) + Math.pow(y1 - y0, 2));
+            this.startTouchesDistance = Math.sqrt(
+                Math.pow(x1 - x0, 2) + Math.pow(y1 - y0, 2)
+            );
         }
 
         this.emit("touchdown", getTouchCoords(e, this.container));
@@ -120,8 +156,17 @@ export default class TouchCaptor extends Captor<TouchCaptorEvents> {
         // Prevent default to avoid default browser behaviors...
         e.preventDefault();
         // ...but simulate mouse behavior anyway, to get the MouseCaptor working as well:
-        if (e.touches.length === 0 && this.lastTouches && this.lastTouches.length) {
-            this.dispatchRelatedMouseEvent("mouseup", e, this.lastTouches[0], document);
+        if (
+            e.touches.length === 0 &&
+            this.lastTouches &&
+            this.lastTouches.length
+        ) {
+            this.dispatchRelatedMouseEvent(
+                "mouseup",
+                e,
+                this.lastTouches[0],
+                document
+            );
             // ... and only click if no move was made
             if (!this.hasMoved) {
                 this.dispatchRelatedMouseEvent("click", e, this.lastTouches[0]);
@@ -149,17 +194,26 @@ export default class TouchCaptor extends Captor<TouchCaptorEvents> {
                 if (this.isMoving) {
                     const camera = this.renderer.getCamera();
                     const cameraState = camera.getState(),
-                        previousCameraState = camera.getPreviousState() || { x: 0, y: 0 };
+                        previousCameraState = camera.getPreviousState() || {
+                            x: 0,
+                            y: 0,
+                        };
 
                     camera.animate(
                         {
-                            x: cameraState.x + TOUCH_INERTIA_RATIO * (cameraState.x - previousCameraState.x),
-                            y: cameraState.y + TOUCH_INERTIA_RATIO * (cameraState.y - previousCameraState.y),
+                            x:
+                                cameraState.x +
+                                TOUCH_INERTIA_RATIO *
+                                    (cameraState.x - previousCameraState.x),
+                            y:
+                                cameraState.y +
+                                TOUCH_INERTIA_RATIO *
+                                    (cameraState.y - previousCameraState.y),
                         },
                         {
                             duration: TOUCH_INERTIA_DURATION,
                             easing: "quadraticOut",
-                        },
+                        }
                     );
                 }
 
@@ -178,10 +232,13 @@ export default class TouchCaptor extends Captor<TouchCaptorEvents> {
         // Prevent default to avoid default browser behaviors...
         e.preventDefault();
         // ...but simulate mouse behavior anyway, to get the MouseCaptor working as well:
-        if (e.touches.length === 1) this.dispatchRelatedMouseEvent("mousemove", e);
+        if (e.touches.length === 1)
+            this.dispatchRelatedMouseEvent("mousemove", e);
 
         const touches = getTouchesArray(e.touches);
-        const touchesPositions = touches.map((touch) => getPosition(touch, this.container));
+        const touchesPositions = touches.map((touch) =>
+            getPosition(touch, this.container)
+        );
         this.lastTouches = touches;
         this.lastTouchesPositions = touchesPositions;
 
@@ -194,7 +251,9 @@ export default class TouchCaptor extends Captor<TouchCaptorEvents> {
         this.hasMoved ||= touchesPositions.some((position, idx) => {
             const startPosition = this.startTouchesPositions[idx];
 
-            return position.x !== startPosition.x || position.y !== startPosition.y;
+            return (
+                position.x !== startPosition.x || position.y !== startPosition.y
+            );
         });
 
         // If there was no move, do not trigger touch moves behavior
@@ -215,10 +274,13 @@ export default class TouchCaptor extends Captor<TouchCaptorEvents> {
 
         switch (this.touchMode) {
             case 1: {
-                const { x: xStart, y: yStart } = this.renderer.viewportToFramedGraph(
-                    (this.startTouchesPositions || [])[0] as Coordinates,
+                const { x: xStart, y: yStart } =
+                    this.renderer.viewportToFramedGraph(
+                        (this.startTouchesPositions || [])[0] as Coordinates
+                    );
+                const { x, y } = this.renderer.viewportToFramedGraph(
+                    touchesPositions[0]
                 );
-                const { x, y } = this.renderer.viewportToFramedGraph(touchesPositions[0]);
 
                 camera.setState({
                     x: startCameraState.x + xStart - x,
@@ -242,11 +304,17 @@ export default class TouchCaptor extends Captor<TouchCaptorEvents> {
                 const { x: x0, y: y0 } = touchesPositions[0];
                 const { x: x1, y: y1 } = touchesPositions[1];
 
-                const angleDiff = Math.atan2(y1 - y0, x1 - x0) - (this.startTouchesAngle as number);
-                const ratioDiff = Math.hypot(y1 - y0, x1 - x0) / (this.startTouchesDistance as number);
+                const angleDiff =
+                    Math.atan2(y1 - y0, x1 - x0) -
+                    (this.startTouchesAngle as number);
+                const ratioDiff =
+                    Math.hypot(y1 - y0, x1 - x0) /
+                    (this.startTouchesDistance as number);
 
                 // 1.
-                const newRatio = camera.getBoundedRatio(startCameraState.ratio / ratioDiff);
+                const newRatio = camera.getBoundedRatio(
+                    startCameraState.ratio / ratioDiff
+                );
                 newCameraState.ratio = newRatio;
                 newCameraState.angle = startCameraState.angle + angleDiff;
 
@@ -254,9 +322,12 @@ export default class TouchCaptor extends Captor<TouchCaptorEvents> {
                 const dimensions = this.getDimensions();
                 const touchGraphPosition = this.renderer.viewportToFramedGraph(
                     (this.startTouchesPositions || [])[0] as Coordinates,
-                    { cameraState: startCameraState },
+                    { cameraState: startCameraState }
                 );
-                const smallestDimension = Math.min(dimensions.width, dimensions.height);
+                const smallestDimension = Math.min(
+                    dimensions.width,
+                    dimensions.height
+                );
 
                 const dx = smallestDimension / dimensions.width;
                 const dy = smallestDimension / dimensions.height;
@@ -268,8 +339,10 @@ export default class TouchCaptor extends Captor<TouchCaptorEvents> {
 
                 // Rotate:
                 [x, y] = [
-                    x * Math.cos(-newCameraState.angle) - y * Math.sin(-newCameraState.angle),
-                    y * Math.cos(-newCameraState.angle) + x * Math.sin(-newCameraState.angle),
+                    x * Math.cos(-newCameraState.angle) -
+                        y * Math.sin(-newCameraState.angle),
+                    y * Math.cos(-newCameraState.angle) +
+                        x * Math.sin(-newCameraState.angle),
                 ];
 
                 newCameraState.x = touchGraphPosition.x - x * ratio;

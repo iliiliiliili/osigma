@@ -1,5 +1,5 @@
 import React, { FC, useEffect, useState } from "react";
-import { OsigmaContainer, ZoomControl, FullScreenControl } from "react-osigma-v2";
+import { OSigmaContainer, ZoomControl, FullScreenControl } from "react-osigma-v2";
 import { omit, mapValues, keyBy, constant } from "lodash";
 
 import getNodeProgramImage from "osigma/rendering/webgl/programs/node.image";
@@ -48,7 +48,7 @@ const Root: FC = () => {
 
   return (
     <div id="app-root" className={showContents ? "show-contents" : ""}>
-      <OsigmaContainer
+      <OSigmaContainer
         graphOptions={{ type: "directed" }}
         initialSettings={{
           nodeProgramClasses: { image: getNodeProgramImage() },
@@ -145,7 +145,7 @@ const Root: FC = () => {
             </div>
           </>
         )}
-      </OsigmaContainer>
+      </OSigmaContainer>
     </div>
   );
 };

@@ -123,32 +123,32 @@ export class LabelGrid {
  * @param  {number}   hoveredNode          - Hovered node (optional)
  * @return {Array}                         - The selected labels.
  */
-export function edgeLabelsToDisplayFromNodes(params: {
-    displayedNodeLabels: Set<number>;
-    highlightedNodes: Set<number>;
-    graph: Graph;
-    hoveredNode: number | null;
-}): Array<string> {
-    const { graph, hoveredNode, highlightedNodes, displayedNodeLabels } = params;
+// export function edgeLabelsToDisplayFromNodes(params: {
+//     displayedNodeLabels: Set<number>;
+//     highlightedNodes: Set<number>;
+//     graph: Graph;
+//     hoveredNode: number | null;
+// }): Array<string> {
+//     const { graph, hoveredNode, highlightedNodes, displayedNodeLabels } = params;
 
-    const worthyEdges: Array<string> = [];
+//     const worthyEdges: Array<string> = [];
 
-    // TODO: the code below can be optimized using #.forEach and batching the code per adj
+//     // TODO: the code below can be optimized using #.forEach and batching the code per adj
 
-    // We should display an edge's label if:
-    //   - Any of its extremities is highlighted or hovered
-    //   - Both of its extremities has its label shown
-    graph.forEachEdge((edge, _, source, target) => {
-        if (
-            source === hoveredNode ||
-            target === hoveredNode ||
-            highlightedNodes.has(source) ||
-            highlightedNodes.has(target) ||
-            (displayedNodeLabels.has(source) && displayedNodeLabels.has(target))
-        ) {
-            worthyEdges.push(edge);
-        }
-    });
+//     // We should display an edge's label if:
+//     //   - Any of its extremities is highlighted or hovered
+//     //   - Both of its extremities has its label shown
+//     graph.forEachEdge((edge, _, source, target) => {
+//         if (
+//             source === hoveredNode ||
+//             target === hoveredNode ||
+//             highlightedNodes.has(source) ||
+//             highlightedNodes.has(target) ||
+//             (displayedNodeLabels.has(source) && displayedNodeLabels.has(target))
+//         ) {
+//             worthyEdges.push(edge);
+//         }
+//     });
 
-    return worthyEdges;
-}
+//     return worthyEdges;
+// }

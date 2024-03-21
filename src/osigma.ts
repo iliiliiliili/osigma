@@ -22,10 +22,6 @@ import {
     CoordinateConversionOverride,
     TypedEventEmitter,
     MouseInteraction,
-    TColor,
-    TLabel,
-    TSize,
-    TNodeFlags,
     TNodeVisual,
     TConnectionVisual,
 } from "./types";
@@ -41,11 +37,11 @@ import {
     getMatrixImpact,
     graphExtent,
 } from "./utils";
-import { edgeLabelsToDisplayFromNodes, LabelGrid } from "./core/labels";
+import { LabelGrid } from "./core/labels";
 import { Settings, validateSettings, resolveSettings } from "./settings";
 import { AbstractNodeProgram } from "./rendering/webgl/programs/common/node";
 import { AbstractEdgeProgram } from "./rendering/webgl/programs/common/edge";
-import TouchCaptor, { FakeOsigmaMouseEvent } from "./core/captors/touch";
+import TouchCaptor, { FakeOSigmaMouseEvent } from "./core/captors/touch";
 import { identity, multiplyVec2 } from "./utils/matrices";
 import {
     doEdgeCollideWithPoint,
@@ -62,38 +58,38 @@ const Y_LABEL_MARGIN = 50;
 /**
  * Event types.
  */
-export interface OsigmaEventPayload {
+export interface OSigmaEventPayload {
     event: MouseCoords;
-    preventOsigmaDefault(): void;
+    preventOSigmaDefault(): void;
 }
 
-export interface OsigmaStageEventPayload extends OsigmaEventPayload {}
-export interface OsigmaNodeEventPayload extends OsigmaEventPayload {
+export interface OSigmaStageEventPayload extends OSigmaEventPayload {}
+export interface OSigmaNodeEventPayload extends OSigmaEventPayload {
     node: number;
 }
-export interface OsigmaEdgeEventPayload extends OsigmaEventPayload {
+export interface OSigmaEdgeEventPayload extends OSigmaEventPayload {
     edge: number;
 }
 
-export type OsigmaStageEvents = {
+export type OSigmaStageEvents = {
     [E in MouseInteraction as `${E}Stage`]: (
-        payload: OsigmaStageEventPayload
+        payload: OSigmaStageEventPayload
     ) => void;
 };
 
-export type OsigmaNodeEvents = {
+export type OSigmaNodeEvents = {
     [E in MouseInteraction as `${E}Node`]: (
-        payload: OsigmaNodeEventPayload
+        payload: OSigmaNodeEventPayload
     ) => void;
 };
 
-export type OsigmaEdgeEvents = {
+export type OSigmaEdgeEvents = {
     [E in MouseInteraction as `${E}Edge`]: (
-        payload: OsigmaEdgeEventPayload
+        payload: OSigmaEdgeEventPayload
     ) => void;
 };
 
-export type OsigmaAdditionalEvents = {
+export type OSigmaAdditionalEvents = {
     // Lifecycle events
     beforeRender(): void;
     afterRender(): void;
@@ -101,18 +97,18 @@ export type OsigmaAdditionalEvents = {
     kill(): void;
 
     // Additional node events
-    enterNode(payload: OsigmaNodeEventPayload): void;
-    leaveNode(payload: OsigmaNodeEventPayload): void;
+    enterNode(payload: OSigmaNodeEventPayload): void;
+    leaveNode(payload: OSigmaNodeEventPayload): void;
 
     // Additional edge events
-    enterEdge(payload: OsigmaEdgeEventPayload): void;
-    leaveEdge(payload: OsigmaEdgeEventPayload): void;
+    enterEdge(payload: OSigmaEdgeEventPayload): void;
+    leaveEdge(payload: OSigmaEdgeEventPayload): void;
 };
 
-export type OsigmaEvents = OsigmaStageEvents &
-    OsigmaNodeEvents &
-    OsigmaEdgeEvents &
-    OsigmaAdditionalEvents;
+export type OSigmaEvents = OSigmaStageEvents &
+    OSigmaNodeEvents &
+    OSigmaEdgeEvents &
+    OSigmaAdditionalEvents;
 
 /**
  * Main class.
@@ -129,8 +125,15 @@ export default class OSigma<
     TZIndex extends TypedArray,
     TNodeFeatures extends TypedArray[],
     TConnectionFeatures extends TypedArray[]
-> extends TypedEventEmitter<OsigmaEvents> {
-    private settings: Settings;
+> extends TypedEventEmitter<OSigmaEvents> {
+    private settings: Settings<
+        TId,
+        TConnectionWeight,
+        TCoordinates,
+        TZIndex,
+        TNodeFeatures,
+        TConnectionFeatures
+    >;
     private graph: OGraph<
         TId,
         TConnectionWeight,
@@ -139,8 +142,22 @@ export default class OSigma<
         [...TNodeFeatures, ...TNodeVisual],
         [...TConnectionFeatures, ...TConnectionVisual]
     >;
-    private mouseCaptor: MouseCaptor;
-    private touchCaptor: TouchCaptor;
+    private mouseCaptor: MouseCaptor<
+        TId,
+        TConnectionWeight,
+        TCoordinates,
+        TZIndex,
+        TNodeFeatures,
+        TConnectionFeatures
+    >;
+    private touchCaptor: TouchCaptor<
+        TId,
+        TConnectionWeight,
+        TCoordinates,
+        TZIndex,
+        TNodeFeatures,
+        TConnectionFeatures
+    >;
     private container: HTMLElement | null;
     private elements: PlainObject<HTMLCanvasElement> = {};
     private canvasContexts: PlainObject<CanvasRenderingContext2D> = {};
@@ -148,8 +165,8 @@ export default class OSigma<
     private activeListeners: PlainObject<Listener> = {};
     private quadtree: QuadTree = new QuadTree();
     private labelGrid: LabelGrid = new LabelGrid();
-    private nodeDataCache: Record<string, NodeDisplayData> = {};
-    private edgeDataCache: Record<string, EdgeDisplayData> = {};
+    // private nodeDataCache: Record<string, NodeDisplayData> = {};
+    // private edgeDataCache: Record<string, EdgeDisplayData> = {};
     private nodesWithForcedLabels: number[] = [];
     private edgesWithForcedLabels: number[] = [];
     private nodeExtent: { x: Extent; y: Extent } = { x: [0, 1], y: [0, 1] };
@@ -184,23 +201,50 @@ export default class OSigma<
     private checkEdgesEventsFrame: number | null = null;
 
     // Programs
-    private nodePrograms: { [key: string]: AbstractNodeProgram } = {};
-    private nodeHoverPrograms: { [key: string]: AbstractNodeProgram } = {};
-    private edgePrograms: { [key: string]: AbstractEdgeProgram } = {};
+    private nodePrograms: {
+        [key: string]: AbstractNodeProgram<
+            TId,
+            TConnectionWeight,
+            TCoordinates,
+            TZIndex,
+            TNodeFeatures,
+            TConnectionFeatures
+        >;
+    } = {};
+    private nodeHoverPrograms: {
+        [key: string]: AbstractNodeProgram<
+            TId,
+            TConnectionWeight,
+            TCoordinates,
+            TZIndex,
+            TNodeFeatures,
+            TConnectionFeatures
+        >;
+    } = {};
+    private edgePrograms: {
+        [key: string]: AbstractEdgeProgram<
+            TId,
+            TConnectionWeight,
+            TCoordinates,
+            TZIndex,
+            TNodeFeatures,
+            TConnectionFeatures
+        >;
+    } = {};
 
     private camera: Camera;
 
     private shouldDefaultGraphVisuals: boolean;
 
-    private nodeColorFeatureId: number;
-    private nodeLabelFeatureId: number;
-    private nodeSizeFeatureId: number;
-    private nodeFlagsFeatureId: number;
+    public nodeColorFeatureId: number;
+    public nodeLabelFeatureId: number;
+    public nodeSizeFeatureId: number;
+    public nodeFlagsFeatureId: number;
 
-    private connectionColorFeatureId: number;
-    private connectionLabelFeatureId: number;
-    private connectionSizeFeatureId: number;
-    private connectionFlagsFeatureId: number;
+    public connectionColorFeatureId: number;
+    public connectionLabelFeatureId: number;
+    public connectionSizeFeatureId: number;
+    public connectionFlagsFeatureId: number;
 
     constructor(
         graph: OGraph<
@@ -212,7 +256,16 @@ export default class OSigma<
             [...TConnectionFeatures, ...TConnectionVisual]
         >,
         container: HTMLElement | null,
-        settings: Partial<Settings> = {},
+        settings: Partial<
+            Settings<
+                TId,
+                TConnectionWeight,
+                TCoordinates,
+                TZIndex,
+                TNodeFeatures,
+                TConnectionFeatures
+            >
+        > = {},
         shouldDefaultGraphVisuals = true
     ) {
         super();
@@ -288,8 +341,10 @@ export default class OSigma<
             );
         }
 
-        // Initial resize
-        this.resize();
+        if (container != null) {
+            // Initial resize
+            this.resize();
+        }
 
         // Initializing the camera
         this.camera = new Camera();
@@ -301,8 +356,10 @@ export default class OSigma<
         this.mouseCaptor = new MouseCaptor(this.elements.mouse, this);
         this.touchCaptor = new TouchCaptor(this.elements.mouse, this);
 
-        // Binding event handlers
-        this.bindEventHandlers();
+        if (container != null) {
+            // Binding event handlers
+            this.bindEventHandlers();
+        }
 
         // Binding graph handlers
         this.bindGraphHandlers();
@@ -472,16 +529,21 @@ export default class OSigma<
             nodeAtPosition = null;
 
         for (let i = 0, l = quadNodes.length; i < l; i++) {
-            const node = quadNodes[i];
+            const nodeId = quadNodes[i];
 
-            const data = this.nodeDataCache[node];
+            // const data = this.nodeDataCache[node];
 
-            const nodePosition = this.framedGraphToViewport(data);
+            const nodePosition = this.framedGraphToViewport({
+                x: this.graph.nodes.xCoordinates[nodeId],
+                y: this.graph.nodes.yCoordinates[nodeId],
+            });
 
-            const size = this.scaleSize(data.size);
+            const size = this.scaleSize(
+                this.graph.nodes.features[this.nodeSizeFeatureId][nodeId]
+            );
 
             if (
-                !data.hidden &&
+                !this.isNodeHidden(nodeId) &&
                 this.mouseIsOnNode(position, nodePosition, size)
             ) {
                 const distance = Math.sqrt(
@@ -492,7 +554,7 @@ export default class OSigma<
                 // TODO: sort by min size also for cases where center is the same
                 if (distance < minDistance) {
                     minDistance = distance;
-                    nodeAtPosition = node;
+                    nodeAtPosition = nodeId;
                 }
             }
         }
@@ -517,8 +579,8 @@ export default class OSigma<
         this.activeListeners.handleMove = (e: MouseCoords): void => {
             const baseEvent = {
                 event: e,
-                preventOsigmaDefault(): void {
-                    e.preventOsigmaDefault();
+                preventOSigmaDefault(): void {
+                    e.preventOSigmaDefault();
                 },
             };
 
@@ -527,7 +589,7 @@ export default class OSigma<
             if (
                 nodeToHover &&
                 this.hoveredNode !== nodeToHover &&
-                !this.nodeDataCache[nodeToHover].hidden
+                !this.isNodeHidden(nodeToHover)
             ) {
                 // Handling passing from one node to the other directly
                 if (this.hoveredNode)
@@ -544,11 +606,18 @@ export default class OSigma<
 
             // Checking if the hovered node is still hovered
             if (this.hoveredNode) {
-                const data = this.nodeDataCache[this.hoveredNode];
+                // const data = this.nodeDataCache[this.hoveredNode];
 
-                const pos = this.framedGraphToViewport(data);
+                const pos = this.framedGraphToViewport({
+                    x: this.graph.nodes.xCoordinates[this.hoveredNode],
+                    y: this.graph.nodes.yCoordinates[this.hoveredNode],
+                });
 
-                const size = this.scaleSize(data.size);
+                const size = this.scaleSize(
+                    this.graph.nodes.features[this.nodeSizeFeatureId][
+                        this.hoveredNode
+                    ]
+                );
 
                 if (!this.mouseIsOnNode(e, pos, size)) {
                     const node = this.hoveredNode;
@@ -578,15 +647,15 @@ export default class OSigma<
             return (e) => {
                 const baseEvent = {
                     event: e,
-                    preventOsigmaDefault(): void {
-                        e.preventOsigmaDefault();
+                    preventOSigmaDefault(): void {
+                        e.preventOSigmaDefault();
                     },
                 };
 
-                const isFakeOsigmaMouseEvent = (
-                    e.original as FakeOsigmaMouseEvent
-                ).isFakeOsigmaMouseEvent;
-                const nodeAtPosition = isFakeOsigmaMouseEvent
+                const isFakeOSigmaMouseEvent = (
+                    e.original as FakeOSigmaMouseEvent
+                ).isFakeOSigmaMouseEvent;
+                const nodeAtPosition = isFakeOSigmaMouseEvent
                     ? this.getNodeAtPosition(e)
                     : this.hoveredNode;
 
@@ -655,7 +724,7 @@ export default class OSigma<
         this.activeListeners.dropNodeGraphUpdate = (e: {
             key: number;
         }): void => {
-            delete this.nodeDataCache[e.key];
+            // delete this.nodeDataCache[e.key];
 
             if (this.hoveredNode === e.key) this.hoveredNode = null;
 
@@ -665,7 +734,7 @@ export default class OSigma<
         this.activeListeners.dropEdgeGraphUpdate = (e: {
             key: number;
         }): void => {
-            delete this.edgeDataCache[e.key];
+            // delete this.edgeDataCache[e.key];
 
             if (this.hoveredEdge === e.key) this.hoveredEdge = null;
 
@@ -673,14 +742,14 @@ export default class OSigma<
         };
 
         this.activeListeners.clearEdgesGraphUpdate = (): void => {
-            this.edgeDataCache = {};
+            // this.edgeDataCache = {};
             this.hoveredEdge = null;
 
             this.activeListeners.graphUpdate();
         };
 
         this.activeListeners.clearGraphUpdate = (): void => {
-            this.nodeDataCache = {};
+            // this.nodeDataCache = {};
             this.hoveredNode = null;
 
             this.activeListeners.clearEdgesGraphUpdate();
@@ -746,7 +815,7 @@ export default class OSigma<
      *
      * @return {OSigma}
      */
-    private checkEdgeHoverEvents(payload: OsigmaEventPayload): this {
+    private checkEdgeHoverEvents(payload: OSigmaEventPayload): this {
         const edgeToHover = this.hoveredNode
             ? null
             : this.getEdgeAtPoint(payload.event.x, payload.event.y);
@@ -767,7 +836,7 @@ export default class OSigma<
      * the key of the edge if any, or null else.
      */
     private getEdgeAtPoint(x: number, y: number): number | null {
-        const { edgeDataCache, nodeDataCache } = this;
+        // const { edgeDataCache, nodeDataCache } = this;
 
         // Check first that pixel is colored:
         // Note that mouse positions must be corrected by pixel ratio to correctly
@@ -791,9 +860,9 @@ export default class OSigma<
         this.graph.someEdge(
             (key, _, sourceId, targetId, [xs, ys], [xt, yt]) => {
                 if (
-                    edgeDataCache[key].hidden ||
-                    nodeDataCache[sourceId].hidden ||
-                    nodeDataCache[targetId].hidden
+                    this.isEdgeHidden(key) ||
+                    this.isNodeHidden(sourceId) ||
+                    this.isNodeHidden(targetId)
                 )
                     return false;
 
@@ -828,9 +897,9 @@ export default class OSigma<
         const edges = this.graph.filterEdges(
             (key, _, sourceId, targetId, sourcePosition, targetPosition) => {
                 if (
-                    edgeDataCache[key].hidden ||
-                    nodeDataCache[sourceId].hidden ||
-                    nodeDataCache[targetId].hidden
+                    this.isEdgeHidden(key) ||
+                    this.isNodeHidden(sourceId) ||
+                    this.isNodeHidden(targetId)
                 )
                     return false;
                 if (
@@ -843,7 +912,9 @@ export default class OSigma<
                         targetPosition[1],
                         // Adapt the edge size to the zoom ratio:
                         this.scaleSize(
-                            edgeDataCache[key].size * transformationRatio
+                            this.graph.connections.features[
+                                this.connectionSizeFeatureId
+                            ][key] * transformationRatio
                         )
                     )
                 ) {
@@ -1317,7 +1388,8 @@ export default class OSigma<
 
         // 1. Count nodes per type:
         nodesToRender.forEach((node) => {
-            const type = this.nodeDataCache[node].type;
+            // const type = this.nodeDataCache[node].type;
+            const type = this.getNodeType(node);
             nodesPerPrograms[type] = (nodesPerPrograms[type] || 0) + 1;
         });
         // 2. Allocate for each type for the proper number of nodes
@@ -1330,10 +1402,10 @@ export default class OSigma<
         }
         // 3. Process all nodes to render:
         nodesToRender.forEach((node) => {
-            const data = this.nodeDataCache[node];
-            this.nodeHoverPrograms[data.type].process(
-                nodesPerPrograms[data.type]++,
-                data
+            const type = this.getNodeType(node);
+            this.nodeHoverPrograms[type].process(
+                nodesPerPrograms[type]++,
+                node
             );
         });
         // 4. Clear hovered nodes layer:
@@ -1379,6 +1451,10 @@ export default class OSigma<
      * @return {OSigma}
      */
     private render(): this {
+        if (this.container === null) {
+            return this;
+        }
+
         this.emit("beforeRender");
 
         const exitRender = () => {
@@ -1556,8 +1632,8 @@ export default class OSigma<
         this.unbindGraphHandlers();
 
         // Clearing the graph data caches
-        this.nodeDataCache = {};
-        this.edgeDataCache = {};
+        // this.nodeDataCache = {};
+        // this.edgeDataCache = {};
 
         // Cleaning renderer state tied to the current graph
         this.displayedNodeLabels.clear();
@@ -1588,7 +1664,14 @@ export default class OSigma<
      *
      * @return {MouseCaptor}
      */
-    getMouseCaptor(): MouseCaptor {
+    getMouseCaptor(): MouseCaptor<
+        TId,
+        TConnectionWeight,
+        TCoordinates,
+        TZIndex,
+        TNodeFeatures,
+        TConnectionFeatures
+    > {
         return this.mouseCaptor;
     }
 
@@ -1597,7 +1680,14 @@ export default class OSigma<
      *
      * @return {TouchCaptor}
      */
-    getTouchCaptor(): TouchCaptor {
+    getTouchCaptor(): TouchCaptor<
+        TId,
+        TConnectionWeight,
+        TCoordinates,
+        TZIndex,
+        TNodeFeatures,
+        TConnectionFeatures
+    > {
         return this.touchCaptor;
     }
 
@@ -1624,30 +1714,30 @@ export default class OSigma<
         };
     }
 
-    /**
-     * Method used to get all the osigma node attributes.
-     * It's usefull for example to get the position of a node
-     * and to get values that are set by the nodeReducer
-     *
-     * @param  {string} key - The node's key.
-     * @return {NodeDisplayData | undefined} A copy of the desired node's attribute or undefined if not found
-     */
-    getNodeDisplayData(key: unknown): NodeDisplayData | undefined {
-        const node = this.nodeDataCache[key as string];
-        return node ? Object.assign({}, node) : undefined;
-    }
+    // /**
+    //  * Method used to get all the osigma node attributes.
+    //  * It's usefull for example to get the position of a node
+    //  * and to get values that are set by the nodeReducer
+    //  *
+    //  * @param  {string} key - The node's key.
+    //  * @return {NodeDisplayData | undefined} A copy of the desired node's attribute or undefined if not found
+    //  */
+    // getNodeDisplayData(key: unknown): NodeDisplayData | undefined {
+    //     const node = this.nodeDataCache[key as string];
+    //     return node ? Object.assign({}, node) : undefined;
+    // }
 
-    /**
-     * Method used to get all the osigma edge attributes.
-     * It's usefull for example to get values that are set by the edgeReducer.
-     *
-     * @param  {string} key - The edge's key.
-     * @return {EdgeDisplayData | undefined} A copy of the desired edge's attribute or undefined if not found
-     */
-    getEdgeDisplayData(key: unknown): EdgeDisplayData | undefined {
-        const edge = this.edgeDataCache[key as string];
-        return edge ? Object.assign({}, edge) : undefined;
-    }
+    // /**
+    //  * Method used to get all the osigma edge attributes.
+    //  * It's usefull for example to get values that are set by the edgeReducer.
+    //  *
+    //  * @param  {string} key - The edge's key.
+    //  * @return {EdgeDisplayData | undefined} A copy of the desired edge's attribute or undefined if not found
+    //  */
+    // getEdgeDisplayData(key: unknown): EdgeDisplayData | undefined {
+    //     const edge = this.edgeDataCache[key as string];
+    //     return edge ? Object.assign({}, edge) : undefined;
+    // }
 
     /**
      * Method used to get the set of currently displayed node labels.
@@ -1672,7 +1762,14 @@ export default class OSigma<
      *
      * @return {Settings} A copy of the settings collection.
      */
-    getSettings(): Settings {
+    getSettings(): Settings<
+        TId,
+        TConnectionWeight,
+        TCoordinates,
+        TZIndex,
+        TNodeFeatures,
+        TConnectionFeatures
+    > {
         return { ...this.settings };
     }
 
@@ -1682,7 +1779,27 @@ export default class OSigma<
      * @param  {string} key - The setting key to get.
      * @return {any} The value attached to this setting key or undefined if not found
      */
-    getSetting<K extends keyof Settings>(key: K): Settings[K] | undefined {
+    getSetting<
+        K extends keyof Settings<
+            TId,
+            TConnectionWeight,
+            TCoordinates,
+            TZIndex,
+            TNodeFeatures,
+            TConnectionFeatures
+        >
+    >(
+        key: K
+    ):
+        | Settings<
+              TId,
+              TConnectionWeight,
+              TCoordinates,
+              TZIndex,
+              TNodeFeatures,
+              TConnectionFeatures
+          >[K]
+        | undefined {
         return this.settings[key];
     }
 
@@ -1694,7 +1811,26 @@ export default class OSigma<
      * @param  {any}    value - The value to set.
      * @return {OSigma}
      */
-    setSetting<K extends keyof Settings>(key: K, value: Settings[K]): this {
+    setSetting<
+        K extends keyof Settings<
+            TId,
+            TConnectionWeight,
+            TCoordinates,
+            TZIndex,
+            TNodeFeatures,
+            TConnectionFeatures
+        >
+    >(
+        key: K,
+        value: Settings<
+            TId,
+            TConnectionWeight,
+            TCoordinates,
+            TZIndex,
+            TNodeFeatures,
+            TConnectionFeatures
+        >[K]
+    ): this {
         this.settings[key] = value;
         validateSettings(this.settings);
         this.handleSettingsUpdate();
@@ -1710,9 +1846,34 @@ export default class OSigma<
      * @param  {function} updater - The update function.
      * @return {OSigma}
      */
-    updateSetting<K extends keyof Settings>(
+    updateSetting<
+        K extends keyof Settings<
+            TId,
+            TConnectionWeight,
+            TCoordinates,
+            TZIndex,
+            TNodeFeatures,
+            TConnectionFeatures
+        >
+    >(
         key: K,
-        updater: (value: Settings[K]) => Settings[K]
+        updater: (
+            value: Settings<
+                TId,
+                TConnectionWeight,
+                TCoordinates,
+                TZIndex,
+                TNodeFeatures,
+                TConnectionFeatures
+            >[K]
+        ) => Settings<
+            TId,
+            TConnectionWeight,
+            TCoordinates,
+            TZIndex,
+            TNodeFeatures,
+            TConnectionFeatures
+        >[K]
     ): this {
         this.settings[key] = updater(this.settings[key]);
         validateSettings(this.settings);
@@ -2133,8 +2294,8 @@ export default class OSigma<
 
         // Releasing cache & state
         this.quadtree = new QuadTree();
-        this.nodeDataCache = {};
-        this.edgeDataCache = {};
+        // this.nodeDataCache = {};
+        // this.edgeDataCache = {};
         this.nodesWithForcedLabels = [];
         this.edgesWithForcedLabels = [];
 
@@ -2205,7 +2366,7 @@ export default class OSigma<
             (hidden ? 1 : 0) |
             ((highlighted ? 1 : 0) << 1) |
             ((forceLabel ? 1 : 0) << 2) |
-            ((nodeType ? 1 : 0) << 3);
+            (nodeType << 3);
 
         return result;
     }
@@ -2224,26 +2385,31 @@ export default class OSigma<
     public encodeEdgeFlags(
         hidden: boolean,
         forceLabel: boolean,
-        nodeType: number
+        edgeType: number
     ): number {
         const result =
-            (hidden ? 1 : 0) |
-            ((forceLabel ? 1 : 0) << 1) |
-            ((nodeType ? 1 : 0) << 2);
+            (hidden ? 1 : 0) | ((forceLabel ? 1 : 0) << 1) | (edgeType << 2);
 
         return result;
     }
 
-    public decodeEdgeFlags(nodeFlags: number): [boolean, boolean, number] {
-        const hidden = (nodeFlags & 0b1) == 1;
-        const forceLabel = ((nodeFlags >> 1) & 0b1) == 1;
-        const nodeType = (nodeFlags >> 2) & 0b111;
+    public decodeEdgeFlags(edgeFlags: number): [boolean, boolean, number] {
+        const hidden = (edgeFlags & 0b1) == 1;
+        const forceLabel = ((edgeFlags >> 1) & 0b1) == 1;
+        const edgeType = (edgeFlags >> 2) & 0b111;
 
-        return [hidden, forceLabel, nodeType];
+        return [hidden, forceLabel, edgeType];
     }
 
     protected applyNodeDefaults(
-        settings: Settings,
+        settings: Settings<
+            TId,
+            TConnectionWeight,
+            TCoordinates,
+            TZIndex,
+            TNodeFeatures,
+            TConnectionFeatures
+        >,
         graph: OGraph<
             TId,
             TConnectionWeight,
@@ -2272,7 +2438,14 @@ export default class OSigma<
     }
 
     protected applyEdgeDefaults(
-        settings: Settings,
+        settings: Settings<
+            TId,
+            TConnectionWeight,
+            TCoordinates,
+            TZIndex,
+            TNodeFeatures,
+            TConnectionFeatures
+        >,
         graph: OGraph<
             TId,
             TConnectionWeight,
@@ -2301,30 +2474,64 @@ export default class OSigma<
     }
 
     public isNodeHidden(nodeId: number) {
-        return (this.graph.nodes.features[this.nodeFlagsFeatureId][nodeId] & 0b1) == 1
+        return (
+            (this.graph.nodes.features[this.nodeFlagsFeatureId][nodeId] &
+                0b1) ==
+            1
+        );
     }
 
     public isNodeHighlighted(nodeId: number) {
-        return ((this.graph.nodes.features[this.nodeFlagsFeatureId][nodeId] >> 1) & 0b1) == 1
+        return (
+            ((this.graph.nodes.features[this.nodeFlagsFeatureId][nodeId] >> 1) &
+                0b1) ==
+            1
+        );
     }
 
     public isNodeForceLabeled(nodeId: number) {
-        return ((this.graph.nodes.features[this.nodeFlagsFeatureId][nodeId] >> 2) & 0b1) == 1
+        return (
+            ((this.graph.nodes.features[this.nodeFlagsFeatureId][nodeId] >> 2) &
+                0b1) ==
+            1
+        );
     }
 
     public getNodeType(nodeId: number) {
-        return (this.graph.nodes.features[this.nodeFlagsFeatureId][nodeId] >> 3) & 0b11
+        return (
+            (this.graph.nodes.features[this.nodeFlagsFeatureId][nodeId] >> 3) &
+            0b11
+        );
     }
-    
+
     public isEdgeHidden(edgeId: number) {
-        return (this.graph.connections.features[this.connectionFlagsFeatureId][edgeId] & 0b1) == 1
+        return (
+            (this.graph.connections.features[this.connectionFlagsFeatureId][
+                edgeId
+            ] &
+                0b1) ==
+            1
+        );
     }
-    
+
     public isEdgeForceLabeled(edgeId: number) {
-        return ((this.graph.connections.features[this.connectionFlagsFeatureId][edgeId] >> 1) & 0b1) == 1
+        return (
+            ((this.graph.connections.features[this.connectionFlagsFeatureId][
+                edgeId
+            ] >>
+                1) &
+                0b1) ==
+            1
+        );
     }
 
     public getEdgeType(edgeId: number) {
-        return (this.graph.connections.features[this.connectionFlagsFeatureId][edgeId] >> 2) & 0b111
+        return (
+            (this.graph.connections.features[this.connectionFlagsFeatureId][
+                edgeId
+            ] >>
+                2) &
+            0b111
+        );
     }
 }

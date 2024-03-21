@@ -79,7 +79,7 @@ describe("osigma internal functions", () => {
                         assert.deepEqual(
                             input,
                             decoded,
-                            `${input} have been encode-decoded into ${decoded}`
+                            `${input} have been encode-decoded into ${decoded} via flags=${encoded}`
                         );
                     });
                 });
@@ -122,7 +122,7 @@ describe("osigma internal functions", () => {
                         assert.deepEqual(
                             input,
                             decoded,
-                            `${input} have been encode-decoded into ${decoded}`
+                            `${input} have been encode-decoded into ${decoded} via flags=${encoded}`
                         );
                     });
                 });
@@ -136,15 +136,15 @@ describe("osigma internal functions", () => {
 
         const allHidden = [true, false];
         const allForceLabel = [true, false];
-        const allNodeType = [0, 1, 2, 3];
+        const allEdgeType = new Array(8).map((_, i) => i);
 
         allHidden.forEach((hidden) => {
             allForceLabel.forEach((forceLabel) => {
-                allNodeType.forEach((nodeType) => {
+                allEdgeType.forEach((edgeType) => {
                     const input = [
                         hidden,
                         forceLabel,
-                        nodeType,
+                        edgeType,
                     ] as const;
 
                     const encoded = osigma.encodeEdgeFlags(...input);
@@ -154,7 +154,7 @@ describe("osigma internal functions", () => {
                     assert.deepEqual(
                         input,
                         decoded,
-                        `${input} have been encode-decoded into ${decoded}`
+                        `${input} have been encode-decoded into ${decoded} via flags=${encoded}`
                     );
                 });
             });
@@ -167,15 +167,15 @@ describe("osigma internal functions", () => {
 
         const allHidden = [true, false];
         const allForceLabel = [true, false];
-        const allNodeType = [0, 1, 2, 3];
+        const allEdgeType = new Array(8).map((_, i) => i);
 
         allHidden.forEach((hidden) => {
             allForceLabel.forEach((forceLabel) => {
-                allNodeType.forEach((nodeType) => {
+                allEdgeType.forEach((edgeType) => {
                     const input = [
                         hidden,
                         forceLabel,
-                        nodeType,
+                        edgeType,
                     ] as const;
 
                     const encoded = osigma.encodeEdgeFlags(...input);
@@ -192,7 +192,7 @@ describe("osigma internal functions", () => {
                     assert.deepEqual(
                         input,
                         decoded,
-                        `${input} have been encode-decoded into ${decoded}`
+                        `${input} have been encode-decoded into ${decoded} via flags=${encoded}`
                     );
                 });
             });

@@ -5,24 +5,24 @@
  * The list of settings and some handy functions.
  * @module
  */
-import { Attributes } from "graphology-types";
-
+import { TypedArray } from "./core/ograph";
 import { assign } from "./utils";
 import drawLabel from "./rendering/canvas/label";
 import drawHover from "./rendering/canvas/hover";
 import drawEdgeLabel from "./rendering/canvas/edge-label";
-import { EdgeDisplayData, NodeDisplayData } from "./types";
-import NodePointProgram from "./rendering/webgl/programs/node.point";
-import EdgeRectangleProgram from "./rendering/webgl/programs/edge.rectangle";
-import EdgeArrowProgram from "./rendering/webgl/programs/edge.arrow";
+// import { EdgeDisplayData, NodeDisplayData } from "./types";
+// import EdgeRectangleProgram from "./rendering/webgl/programs/edge.rectangle";
+// import EdgeArrowProgram from "./rendering/webgl/programs/edge.arrow";
 import { EdgeProgramConstructor } from "./rendering/webgl/programs/common/edge";
 import { NodeProgramConstructor } from "./rendering/webgl/programs/common/node";
+import EdgeLineProgram from "./rendering/webgl/programs/edge.line";
+import NodePointProgram from "./rendering/webgl/programs/node.point";
 
 /**
  * osigma.js settings
  * =================================
  */
-export interface Settings {
+export interface ValueSettings {
     // Performance
     hideEdgesOnMove: boolean;
     hideLabelsOnMove: boolean;
@@ -40,11 +40,15 @@ export interface Settings {
     labelFont: string;
     labelSize: number;
     labelWeight: string;
-    labelColor: { attribute: string; color?: string } | { color: string; attribute?: undefined };
+    labelColor:
+        | { attribute: string; color?: string }
+        | { color: string; attribute?: undefined };
     edgeLabelFont: string;
     edgeLabelSize: number;
     edgeLabelWeight: string;
-    edgeLabelColor: { attribute: string; color?: string } | { color: string; attribute?: undefined };
+    edgeLabelColor:
+        | { attribute: string; color?: string }
+        | { color: string; attribute?: undefined };
     stagePadding: number;
     zoomToSizeRatioFunction: (ratio: number) => number;
     itemSizesReference: "screen" | "positions";
@@ -52,9 +56,6 @@ export interface Settings {
     labelDensity: number;
     labelGridCellSize: number;
     labelRenderedSizeThreshold: number;
-    // Reducers
-    nodeReducer: null | ((node: string, data: Attributes) => Partial<NodeDisplayData>);
-    edgeReducer: null | ((edge: string, data: Attributes) => Partial<EdgeDisplayData>);
     // Features
     zIndex: boolean;
     minCameraRatio: null | number;
@@ -65,14 +66,73 @@ export interface Settings {
     edgeLabelRenderer: typeof drawEdgeLabel;
     // Lifecycle
     allowInvalidContainer: boolean;
-
-    // Program classes
-    nodeProgramClasses: { [type: string]: NodeProgramConstructor };
-    nodeHoverProgramClasses: { [type: string]: NodeProgramConstructor };
-    edgeProgramClasses: { [type: string]: EdgeProgramConstructor };
 }
 
-export const DEFAULT_SETTINGS: Settings = {
+
+export interface Settings<
+    TId extends TypedArray,
+    TConnectionWeight extends TypedArray,
+    TCoordinates extends TypedArray,
+    TZIndex extends TypedArray,
+    TNodeFeatures extends TypedArray[],
+    TConnectionFeatures extends TypedArray[]
+> extends ValueSettings {
+    // Reducers
+    // nodeReducer:
+    //     | null
+    //     | ((node: string, data: Attributes) => Partial<NodeDisplayData>);
+    // edgeReducer:
+    //     | null
+    //     | ((edge: string, data: Attributes) => Partial<EdgeDisplayData>);
+
+    // Program classes
+    nodeProgramClasses: {
+        [type: string]: NodeProgramConstructor<
+            TId,
+            TConnectionWeight,
+            TCoordinates,
+            TZIndex,
+            TNodeFeatures,
+            TConnectionFeatures
+        >;
+    };
+    nodeHoverProgramClasses: {
+        [type: string]: NodeProgramConstructor<
+            TId,
+            TConnectionWeight,
+            TCoordinates,
+            TZIndex,
+            TNodeFeatures,
+            TConnectionFeatures
+        >;
+    };
+    edgeProgramClasses: {
+        [type: string]: EdgeProgramConstructor<
+            TId,
+            TConnectionWeight,
+            TCoordinates,
+            TZIndex,
+            TNodeFeatures,
+            TConnectionFeatures
+        >;
+    };
+}
+
+export const createDefaultSettings = <
+    TId extends TypedArray,
+    TConnectionWeight extends TypedArray,
+    TCoordinates extends TypedArray,
+    TZIndex extends TypedArray,
+    TNodeFeatures extends TypedArray[],
+    TConnectionFeatures extends TypedArray[]
+>(): Settings<
+    TId,
+    TConnectionWeight,
+    TCoordinates,
+    TZIndex,
+    TNodeFeatures,
+    TConnectionFeatures
+> => ({
     // Performance
     hideEdgesOnMove: false,
     hideLabelsOnMove: false,
@@ -106,8 +166,8 @@ export const DEFAULT_SETTINGS: Settings = {
     labelRenderedSizeThreshold: 6,
 
     // Reducers
-    nodeReducer: null,
-    edgeReducer: null,
+    // nodeReducer: null,
+    // edgeReducer: null,
 
     // Features
     zIndex: false,
@@ -126,35 +186,94 @@ export const DEFAULT_SETTINGS: Settings = {
     nodeProgramClasses: {},
     nodeHoverProgramClasses: {},
     edgeProgramClasses: {},
-};
+});
 
-export const DEFAULT_NODE_PROGRAM_CLASSES = {
-    circle: NodePointProgram,
-};
-
-export const DEFAULT_EDGE_PROGRAM_CLASSES = {
-    arrow: EdgeArrowProgram,
-    line: EdgeRectangleProgram,
-};
-
-export function validateSettings(settings: Settings): void {
-    if (typeof settings.labelDensity !== "number" || settings.labelDensity < 0) {
-        throw new Error("Settings: invalid `labelDensity`. Expecting a positive number.");
+export function validateSettings<
+    TId extends TypedArray,
+    TConnectionWeight extends TypedArray,
+    TCoordinates extends TypedArray,
+    TZIndex extends TypedArray,
+    TNodeFeatures extends TypedArray[],
+    TConnectionFeatures extends TypedArray[]
+>(
+    settings: Settings<
+        TId,
+        TConnectionWeight,
+        TCoordinates,
+        TZIndex,
+        TNodeFeatures,
+        TConnectionFeatures
+    >
+): void {
+    if (
+        typeof settings.labelDensity !== "number" ||
+        settings.labelDensity < 0
+    ) {
+        throw new Error(
+            "Settings: invalid `labelDensity`. Expecting a positive number."
+        );
     }
 
     const { minCameraRatio, maxCameraRatio } = settings;
-    if (typeof minCameraRatio === "number" && typeof maxCameraRatio === "number" && maxCameraRatio < minCameraRatio) {
+    if (
+        typeof minCameraRatio === "number" &&
+        typeof maxCameraRatio === "number" &&
+        maxCameraRatio < minCameraRatio
+    ) {
         throw new Error(
-            "Settings: invalid camera ratio boundaries. Expecting `maxCameraRatio` to be greater than `minCameraRatio`.",
+            "Settings: invalid camera ratio boundaries. Expecting `maxCameraRatio` to be greater than `minCameraRatio`."
         );
     }
 }
 
-export function resolveSettings(settings: Partial<Settings>): Settings {
-    const resolvedSettings = assign({}, DEFAULT_SETTINGS, settings);
+export function resolveSettings<
+    TId extends TypedArray,
+    TConnectionWeight extends TypedArray,
+    TCoordinates extends TypedArray,
+    TZIndex extends TypedArray,
+    TNodeFeatures extends TypedArray[],
+    TConnectionFeatures extends TypedArray[]
+>(
+    settings: Partial<
+        Settings<
+            TId,
+            TConnectionWeight,
+            TCoordinates,
+            TZIndex,
+            TNodeFeatures,
+            TConnectionFeatures
+        >
+    >
+): Settings<
+    TId,
+    TConnectionWeight,
+    TCoordinates,
+    TZIndex,
+    TNodeFeatures,
+    TConnectionFeatures
+> {
 
-    resolvedSettings.nodeProgramClasses = assign({}, DEFAULT_NODE_PROGRAM_CLASSES, resolvedSettings.nodeProgramClasses);
-    resolvedSettings.edgeProgramClasses = assign({}, DEFAULT_EDGE_PROGRAM_CLASSES, resolvedSettings.edgeProgramClasses);
+    const default_node_program_class = {
+        0: NodePointProgram,
+    };
+    
+    const default_edge_prograam_class = {
+        0: EdgeLineProgram,
+    };
+
+    const default_settings = createDefaultSettings();
+    const resolvedSettings = assign({}, default_settings, settings);
+
+    resolvedSettings.nodeProgramClasses = assign(
+        {},
+        default_node_program_class,
+        resolvedSettings.nodeProgramClasses
+    );
+    resolvedSettings.edgeProgramClasses = assign(
+        {},
+        default_edge_prograam_class,
+        resolvedSettings.edgeProgramClasses
+    );
 
     return resolvedSettings;
 }

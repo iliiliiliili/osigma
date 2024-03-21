@@ -6,8 +6,14 @@
  * @module
  */
 import { CameraState, MouseCoords, WheelCoords } from "../../types";
+import { TypedArray } from "../../core/ograph";
 import OSigma from "../../osigma";
-import Captor, { getWheelDelta, getMouseCoords, getPosition, getWheelCoords } from "./captor";
+import Captor, {
+    getWheelDelta,
+    getMouseCoords,
+    getPosition,
+    getWheelCoords,
+} from "./captor";
 
 /**
  * Constants.
@@ -41,7 +47,22 @@ export type MouseCaptorEvents = {
  *
  * @constructor
  */
-export default class MouseCaptor extends Captor<MouseCaptorEvents> {
+export default class MouseCaptor<
+    TId extends TypedArray,
+    TConnectionWeight extends TypedArray,
+    TCoordinates extends TypedArray,
+    TZIndex extends TypedArray,
+    TNodeFeatures extends TypedArray[],
+    TConnectionFeatures extends TypedArray[]
+> extends Captor<
+    TId,
+    TConnectionWeight,
+    TCoordinates,
+    TZIndex,
+    TNodeFeatures,
+    TConnectionFeatures,
+    MouseCaptorEvents
+> {
     // State
     enabled = true;
     draggedEvents = 0;
@@ -58,7 +79,17 @@ export default class MouseCaptor extends Captor<MouseCaptorEvents> {
     currentWheelDirection: -1 | 0 | 1 = 0;
     lastWheelTriggerTime?: number;
 
-    constructor(container: HTMLElement, renderer: OSigma) {
+    constructor(
+        container: HTMLElement,
+        renderer: OSigma<
+            TId,
+            TConnectionWeight,
+            TCoordinates,
+            TZIndex,
+            TNodeFeatures,
+            TConnectionFeatures
+        >
+    ) {
         super(container, renderer);
 
         // Binding methods
@@ -71,27 +102,32 @@ export default class MouseCaptor extends Captor<MouseCaptorEvents> {
         this.handleOut = this.handleOut.bind(this);
 
         // Binding events
-        container.addEventListener("click", this.handleClick, false);
-        container.addEventListener("contextmenu", this.handleRightClick, false);
-        container.addEventListener("mousedown", this.handleDown, false);
-        container.addEventListener("wheel", this.handleWheel, false);
-        container.addEventListener("mouseout", this.handleOut, false);
+        container?.addEventListener("click", this.handleClick, false);
+        container?.addEventListener("contextmenu", this.handleRightClick, false);
+        container?.addEventListener("mousedown", this.handleDown, false);
+        container?.addEventListener("wheel", this.handleWheel, false);
+        container?.addEventListener("mouseout", this.handleOut, false);
 
-        document.addEventListener("mousemove", this.handleMove, false);
-        document.addEventListener("mouseup", this.handleUp, false);
+        if (typeof document !== "undefined") {
+
+            document.addEventListener("mousemove", this.handleMove, false);
+            document.addEventListener("mouseup", this.handleUp, false);
+        }
     }
 
     kill(): void {
         const container = this.container;
 
-        container.removeEventListener("click", this.handleClick);
-        container.removeEventListener("contextmenu", this.handleRightClick);
-        container.removeEventListener("mousedown", this.handleDown);
-        container.removeEventListener("wheel", this.handleWheel);
-        container.removeEventListener("mouseout", this.handleOut);
+        container?.removeEventListener("click", this.handleClick);
+        container?.removeEventListener("contextmenu", this.handleRightClick);
+        container?.removeEventListener("mousedown", this.handleDown);
+        container?.removeEventListener("wheel", this.handleWheel);
+        container?.removeEventListener("mouseout", this.handleOut);
 
-        document.removeEventListener("mousemove", this.handleMove);
-        document.removeEventListener("mouseup", this.handleUp);
+        if (typeof document !== "undefined") {
+            document.removeEventListener("mousemove", this.handleMove);
+            document.removeEventListener("mouseup", this.handleUp);
+        }
     }
 
     handleClick(e: MouseEvent): void {
@@ -114,7 +150,8 @@ export default class MouseCaptor extends Captor<MouseCaptorEvents> {
         }, DOUBLE_CLICK_TIMEOUT);
 
         // NOTE: this is here to prevent click events on drag
-        if (this.draggedEvents < DRAGGED_EVENTS_TOLERANCE) this.emit("click", getMouseCoords(e, this.container));
+        if (this.draggedEvents < DRAGGED_EVENTS_TOLERANCE)
+            this.emit("click", getMouseCoords(e, this.container));
     }
 
     handleRightClick(e: MouseEvent): void {
@@ -132,16 +169,24 @@ export default class MouseCaptor extends Captor<MouseCaptorEvents> {
         const mouseCoords = getMouseCoords(e, this.container);
         this.emit("doubleClick", mouseCoords);
 
-        if (mouseCoords.OsigmaDefaultPrevented) return;
+        if (mouseCoords.OSigmaDefaultPrevented) return;
 
         // default behavior
         const camera = this.renderer.getCamera();
-        const newRatio = camera.getBoundedRatio(camera.getState().ratio / DOUBLE_CLICK_ZOOMING_RATIO);
+        const newRatio = camera.getBoundedRatio(
+            camera.getState().ratio / DOUBLE_CLICK_ZOOMING_RATIO
+        );
 
-        camera.animate(this.renderer.getViewportZoomedState(getPosition(e, this.container), newRatio), {
-            easing: "quadraticInOut",
-            duration: DOUBLE_CLICK_ZOOMING_DURATION,
-        });
+        camera.animate(
+            this.renderer.getViewportZoomedState(
+                getPosition(e, this.container),
+                newRatio
+            ),
+            {
+                easing: "quadraticInOut",
+                duration: DOUBLE_CLICK_ZOOMING_DURATION,
+            }
+        );
     }
 
     handleDown(e: MouseEvent): void {
@@ -183,13 +228,19 @@ export default class MouseCaptor extends Captor<MouseCaptorEvents> {
         if (this.isMoving) {
             camera.animate(
                 {
-                    x: cameraState.x + MOUSE_INERTIA_RATIO * (cameraState.x - previousCameraState.x),
-                    y: cameraState.y + MOUSE_INERTIA_RATIO * (cameraState.y - previousCameraState.y),
+                    x:
+                        cameraState.x +
+                        MOUSE_INERTIA_RATIO *
+                            (cameraState.x - previousCameraState.x),
+                    y:
+                        cameraState.y +
+                        MOUSE_INERTIA_RATIO *
+                            (cameraState.y - previousCameraState.y),
                 },
                 {
                     duration: MOUSE_INERTIA_DURATION,
                     easing: "quadraticOut",
-                },
+                }
             );
         } else if (this.lastMouseX !== x || this.lastMouseY !== y) {
             camera.setState({
@@ -230,7 +281,7 @@ export default class MouseCaptor extends Captor<MouseCaptorEvents> {
             this.emit("mousemove", mouseCoords);
         }
 
-        if (mouseCoords.OsigmaDefaultPrevented) return;
+        if (mouseCoords.OSigmaDefaultPrevented) return;
 
         // Handle the case when "isMouseDown" all the time, to allow dragging the
         // stage while the mouse is not hover the container:
@@ -289,12 +340,14 @@ export default class MouseCaptor extends Captor<MouseCaptorEvents> {
         const wheelCoords = getWheelCoords(e, this.container);
         this.emit("wheel", wheelCoords);
 
-        if (wheelCoords.OsigmaDefaultPrevented) return;
+        if (wheelCoords.OSigmaDefaultPrevented) return;
 
         // Default behavior
         const ratioDiff = delta > 0 ? 1 / ZOOMING_RATIO : ZOOMING_RATIO;
         const camera = this.renderer.getCamera();
-        const newRatio = camera.getBoundedRatio(camera.getState().ratio * ratioDiff);
+        const newRatio = camera.getBoundedRatio(
+            camera.getState().ratio * ratioDiff
+        );
         const wheelDirection = delta > 0 ? 1 : -1;
         const now = Date.now();
 
@@ -308,14 +361,17 @@ export default class MouseCaptor extends Captor<MouseCaptorEvents> {
         }
 
         camera.animate(
-            this.renderer.getViewportZoomedState(getPosition(e, this.container), newRatio),
+            this.renderer.getViewportZoomedState(
+                getPosition(e, this.container),
+                newRatio
+            ),
             {
                 easing: "quadraticOut",
                 duration: MOUSE_ZOOM_DURATION,
             },
             () => {
                 this.currentWheelDirection = 0;
-            },
+            }
         );
 
         this.currentWheelDirection = wheelDirection;

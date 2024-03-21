@@ -140,7 +140,7 @@ export function createElement<T extends HTMLElement>(
  * @return {number}
  */
 export function getPixelRatio(): number {
-    if (typeof window.devicePixelRatio !== "undefined")
+    if (typeof window !== "undefined" && typeof window.devicePixelRatio !== "undefined")
         return window.devicePixelRatio;
 
     return 1;

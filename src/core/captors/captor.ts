@@ -3,8 +3,16 @@
  * ======================
  * @module
  */
-import { Coordinates, MouseCoords, TouchCoords, WheelCoords, TypedEventEmitter, EventsMapping } from "../../types";
+import {
+    Coordinates,
+    MouseCoords,
+    TouchCoords,
+    WheelCoords,
+    TypedEventEmitter,
+    EventsMapping,
+} from "../../types";
 import OSigma from "../../osigma";
+import { TypedArray } from "../../core/ograph";
 
 /**
  * Captor utils functions
@@ -21,7 +29,10 @@ import OSigma from "../../osigma";
  * @param  {HTMLElement} dom - A DOM element to compute offset relatively to.
  * @return {number}      The local Y value of the mouse.
  */
-export function getPosition(e: MouseEvent | Touch, dom: HTMLElement): Coordinates {
+export function getPosition(
+    e: MouseEvent | Touch,
+    dom: HTMLElement
+): Coordinates {
     const bbox = dom.getBoundingClientRect();
 
     return {
@@ -40,9 +51,9 @@ export function getPosition(e: MouseEvent | Touch, dom: HTMLElement): Coordinate
 export function getMouseCoords(e: MouseEvent, dom: HTMLElement): MouseCoords {
     const res: MouseCoords = {
         ...getPosition(e, dom),
-        OsigmaDefaultPrevented: false,
-        preventOsigmaDefault(): void {
-            res.OsigmaDefaultPrevented = true;
+        OSigmaDefaultPrevented: false,
+        preventOSigmaDefault(): void {
+            res.OSigmaDefaultPrevented = true;
         },
         original: e,
     };
@@ -67,7 +78,8 @@ export function getWheelCoords(e: WheelEvent, dom: HTMLElement): WheelCoords {
 const MAX_TOUCHES = 2;
 export function getTouchesArray(touches: TouchList): Touch[] {
     const arr = [];
-    for (let i = 0, l = Math.min(touches.length, MAX_TOUCHES); i < l; i++) arr.push(touches[i]);
+    for (let i = 0, l = Math.min(touches.length, MAX_TOUCHES); i < l; i++)
+        arr.push(touches[i]);
     return arr;
 }
 
@@ -80,7 +92,9 @@ export function getTouchesArray(touches: TouchList): Touch[] {
  */
 export function getTouchCoords(e: TouchEvent, dom: HTMLElement): TouchCoords {
     return {
-        touches: getTouchesArray(e.touches).map((touch) => getPosition(touch, dom)),
+        touches: getTouchesArray(e.touches).map((touch) =>
+            getPosition(touch, dom)
+        ),
         original: e,
     };
 }
@@ -103,11 +117,36 @@ export function getWheelDelta(e: WheelEvent): number {
 /**
  * Abstract class representing a captor like the user's mouse or touch controls.
  */
-export default abstract class Captor<Events extends EventsMapping> extends TypedEventEmitter<Events> {
+export default abstract class Captor<
+    TId extends TypedArray,
+    TConnectionWeight extends TypedArray,
+    TCoordinates extends TypedArray,
+    TZIndex extends TypedArray,
+    TNodeFeatures extends TypedArray[],
+    TConnectionFeatures extends TypedArray[],
+    Events extends EventsMapping
+> extends TypedEventEmitter<Events> {
     container: HTMLElement;
-    renderer: OSigma;
+    renderer: OSigma<
+        TId,
+        TConnectionWeight,
+        TCoordinates,
+        TZIndex,
+        TNodeFeatures,
+        TConnectionFeatures
+    >;
 
-    constructor(container: HTMLElement, renderer: OSigma) {
+    constructor(
+        container: HTMLElement,
+        renderer: OSigma<
+            TId,
+            TConnectionWeight,
+            TCoordinates,
+            TZIndex,
+            TNodeFeatures,
+            TConnectionFeatures
+        >
+    ) {
         super();
 
         // Properties

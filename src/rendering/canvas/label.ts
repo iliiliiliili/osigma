@@ -5,8 +5,8 @@
  * Function used by the canvas renderer to display a single node's label.
  * @module
  */
-import { Settings } from "../../settings";
-import { NodeDisplayData, PartialButFor } from "../../types";
+import { ValueSettings } from "../../settings";
+// import { NodeDisplayData, PartialButFor } from "../../types";
 
 // export default function drawLabel(
 //     context: CanvasRenderingContext2D,
@@ -34,7 +34,7 @@ export default function drawLabel(
     x: number,
     y: number,
     nodeSize: number,
-    settings: Settings,
+    settings: ValueSettings,
 ): void {
 
     const labelSize = settings.labelSize,
