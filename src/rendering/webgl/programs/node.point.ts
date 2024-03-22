@@ -13,11 +13,8 @@ import { decodeColor } from "../../../value-choices";
 import { floatColor } from "../../../utils";
 import { NodeProgram } from "./common/node";
 import { UncertainWebGL2RenderingContext } from "./common/program";
-// import VERTEX_SHADER_SOURCE from "../shaders/node.point.vert.glsl";
-// import FRAGMENT_SHADER_SOURCE from "../shaders/node.point.frag.glsl";
-
-const VERTEX_SHADER_SOURCE = "";
-const FRAGMENT_SHADER_SOURCE = "";
+import VERTEX_SHADER_SOURCE from "../shaders/node.point.vert.glsl";
+import FRAGMENT_SHADER_SOURCE from "../shaders/node.point.frag.glsl";
 
 const { UNSIGNED_BYTE, FLOAT } = UncertainWebGL2RenderingContext;
 

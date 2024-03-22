@@ -12,12 +12,8 @@ import { floatColor } from "../../../utils";
 import { decodeColor } from "../../../value-choices";
 import { EdgeProgram } from "./common/edge";
 import { UncertainWebGL2RenderingContext } from "./common/program";
-// import VERTEX_SHADER_SOURCE from "../shaders/edge.line.vert.glsl";
-// import FRAGMENT_SHADER_SOURCE from "../shaders/edge.line.frag.glsl";
-
-const VERTEX_SHADER_SOURCE = "";
-const FRAGMENT_SHADER_SOURCE = "";
-
+import VERTEX_SHADER_SOURCE from "../shaders/edge.line.vert.glsl";
+import FRAGMENT_SHADER_SOURCE from "../shaders/edge.line.frag.glsl";
 
 const { UNSIGNED_BYTE, FLOAT } = UncertainWebGL2RenderingContext;
 
