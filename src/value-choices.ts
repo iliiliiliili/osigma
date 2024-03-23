@@ -2,9 +2,9 @@
 
 export const labelChoices = (() => {
 
-    const result: string[] = [];
+    const result: string[] = [""];
 
-    for (let i = 0; i < 256; i++) {
+    for (let i = 1; i < 256; i++) {
 
         result.push(`l${i}`);
     }

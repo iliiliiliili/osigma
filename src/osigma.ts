@@ -202,7 +202,7 @@ export default class OSigma<
 
     // Programs
     private nodePrograms: {
-        [key: string]: AbstractNodeProgram<
+        [key: number]: AbstractNodeProgram<
             TId,
             TConnectionWeight,
             TCoordinates,
@@ -212,7 +212,7 @@ export default class OSigma<
         >;
     } = {};
     private nodeHoverPrograms: {
-        [key: string]: AbstractNodeProgram<
+        [key: number]: AbstractNodeProgram<
             TId,
             TConnectionWeight,
             TCoordinates,
@@ -222,7 +222,7 @@ export default class OSigma<
         >;
     } = {};
     private edgePrograms: {
-        [key: string]: AbstractEdgeProgram<
+        [key: number]: AbstractEdgeProgram<
             TId,
             TConnectionWeight,
             TCoordinates,
@@ -1000,7 +1000,7 @@ export default class OSigma<
         );
 
         for (let i = 0, l = this.graph.nodeCount; i < l; i++) {
-            const [, , forceLabel, nodeType] = this.decodeNodeFlags(
+            const [, , forceLabel, nodeType] = OSigma.decodeNodeFlags(
                 this.graph.nodes.features[this.nodeFlagsFeatureId][i]
             );
 
@@ -1053,7 +1053,7 @@ export default class OSigma<
                 ) / normalizationRatio
             );
 
-            const [hidden, highlighted, , nodeType] = this.decodeNodeFlags(
+            const [hidden, highlighted, , nodeType] = OSigma.decodeNodeFlags(
                 this.graph.nodes.features[this.nodeFlagsFeatureId][i]
             );
 
@@ -1085,7 +1085,7 @@ export default class OSigma<
 
         this.labelGrid.organize();
 
-        const edgesPerPrograms: Record<string, number> = {};
+        const edgesPerPrograms: Record<number, number> = {};
 
         if (this.shouldDefaultGraphVisuals) {
             this.applyEdgeDefaults(this.settings, this.graph);
@@ -1103,8 +1103,8 @@ export default class OSigma<
 
             // if (settings.edgeReducer) attr = settings.edgeReducer(edge, attr);
 
-            const [hidden, forceLabel, edgeType] = this.decodeEdgeFlags(
-                this.graph.nodes.features[this.nodeFlagsFeatureId][i]
+            const [hidden, forceLabel, edgeType] = OSigma.decodeEdgeFlags(
+                this.graph.connections.features[this.connectionFlagsFeatureId][i]
             );
 
             edgesPerPrograms[edgeType] = (edgesPerPrograms[edgeType] || 0) + 1;
@@ -1194,7 +1194,7 @@ export default class OSigma<
             // NOTE: we can do better probably
             if (this.displayedNodeLabels.has(nodeId)) continue;
 
-            const [hidden, , forceLabel, nodeType] = this.decodeNodeFlags(
+            const [hidden, , forceLabel, nodeType] = OSigma.decodeNodeFlags(
                 this.graph.nodes.features[this.nodeFlagsFeatureId][nodeId]
             );
 
@@ -1362,7 +1362,7 @@ export default class OSigma<
         const nodesToRender: number[] = [];
 
         if (this.hoveredNode) {
-            const [hidden, , ,] = this.decodeNodeFlags(
+            const [hidden, , ,] = OSigma.decodeNodeFlags(
                 this.graph.nodes.features[this.nodeFlagsFeatureId][
                     this.hoveredNode
                 ]
@@ -2354,7 +2354,7 @@ export default class OSigma<
         return { ...this.elements };
     }
 
-    public encodeNodeFlags(
+    public static encodeNodeFlags(
         hidden: boolean,
         highlighted: boolean,
         forceLabel: boolean,
@@ -2369,7 +2369,7 @@ export default class OSigma<
         return result;
     }
 
-    public decodeNodeFlags(
+    public static decodeNodeFlags(
         nodeFlags: number
     ): [boolean, boolean, boolean, number] {
         const hidden = (nodeFlags & 0b1) == 1;
@@ -2380,7 +2380,7 @@ export default class OSigma<
         return [hidden, highlighted, forceLabel, nodeType];
     }
 
-    public encodeEdgeFlags(
+    public static encodeEdgeFlags(
         hidden: boolean,
         forceLabel: boolean,
         edgeType: number
@@ -2391,7 +2391,7 @@ export default class OSigma<
         return result;
     }
 
-    public decodeEdgeFlags(edgeFlags: number): [boolean, boolean, number] {
+    public static decodeEdgeFlags(edgeFlags: number): [boolean, boolean, number] {
         const hidden = (edgeFlags & 0b1) == 1;
         const forceLabel = ((edgeFlags >> 1) & 0b1) == 1;
         const edgeType = (edgeFlags >> 2) & 0b111;
@@ -2417,7 +2417,7 @@ export default class OSigma<
             [...TConnectionFeatures, ...TConnectionVisual]
         >
     ): void {
-        const defaultNodeFlags = this.encodeNodeFlags(
+        const defaultNodeFlags = OSigma.encodeNodeFlags(
             false,
             false,
             false,
@@ -2427,7 +2427,7 @@ export default class OSigma<
         for (let i = 0; i < graph.nodeCount; i++) {
             graph.nodes.features[this.nodeColorFeatureId][i] =
                 settings.defaultNodeColor;
-            graph.nodes.features[this.nodeLabelFeatureId][i] = 0;
+            // graph.nodes.features[this.nodeLabelFeatureId][i] = 0;
             graph.nodes.features[this.nodeSizeFeatureId][i] =
                 settings.defaultNodeSize;
             graph.nodes.features[this.nodeFlagsFeatureId][i] = defaultNodeFlags;
@@ -2453,7 +2453,7 @@ export default class OSigma<
             [...TConnectionFeatures, ...TConnectionVisual]
         >
     ): void {
-        const defaultEdgeFlags = this.encodeEdgeFlags(
+        const defaultEdgeFlags = OSigma.encodeEdgeFlags(
             false,
             false,
             settings.defaultEdgeType
@@ -2461,13 +2461,13 @@ export default class OSigma<
 
         for (let i = 0; i < graph.nodeCount; i++) {
             graph.connections.features[this.connectionColorFeatureId][i] =
-                settings.defaultNodeColor;
-            graph.connections.features[this.connectionLabelFeatureId][i] = 0;
+                settings.defaultEdgeColor;
+            // graph.connections.features[this.connectionLabelFeatureId][i] = 0;
             graph.connections.features[this.connectionSizeFeatureId][i] =
                 settings.defaultNodeSize;
             graph.connections.features[this.connectionFlagsFeatureId][i] =
                 defaultEdgeFlags;
-            graph.connections.zIndex[i] = 0;
+            // graph.connections.zIndex[i] = 0;
         }
     }
 

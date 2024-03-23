@@ -72,9 +72,9 @@ describe("osigma internal functions", () => {
                             nodeType,
                         ] as const;
 
-                        const encoded = osigma.encodeNodeFlags(...input);
+                        const encoded = OSigma.encodeNodeFlags(...input);
 
-                        const decoded = osigma.decodeNodeFlags(encoded);
+                        const decoded = OSigma.decodeNodeFlags(encoded);
 
                         assert.deepEqual(
                             input,
@@ -107,7 +107,7 @@ describe("osigma internal functions", () => {
                             nodeType,
                         ] as const;
 
-                        const encoded = osigma.encodeNodeFlags(...input);
+                        const encoded = OSigma.encodeNodeFlags(...input);
                         const nodeId = 0;
                         
                         osigma.getGraph().nodes.features[osigma.nodeFlagsFeatureId][nodeId] = encoded;
@@ -147,9 +147,9 @@ describe("osigma internal functions", () => {
                         edgeType,
                     ] as const;
 
-                    const encoded = osigma.encodeEdgeFlags(...input);
+                    const encoded = OSigma.encodeEdgeFlags(...input);
 
-                    const decoded = osigma.decodeEdgeFlags(encoded);
+                    const decoded = OSigma.decodeEdgeFlags(encoded);
 
                     assert.deepEqual(
                         input,
@@ -178,7 +178,7 @@ describe("osigma internal functions", () => {
                         edgeType,
                     ] as const;
 
-                    const encoded = osigma.encodeEdgeFlags(...input);
+                    const encoded = OSigma.encodeEdgeFlags(...input);
                     const connectionId = 0;
                     
                     osigma.getGraph().nodes.features[osigma.nodeFlagsFeatureId][connectionId] = encoded;

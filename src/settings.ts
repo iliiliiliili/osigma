@@ -17,6 +17,7 @@ import { EdgeProgramConstructor } from "./rendering/webgl/programs/common/edge";
 import { NodeProgramConstructor } from "./rendering/webgl/programs/common/node";
 import EdgeLineProgram from "./rendering/webgl/programs/edge.line";
 import NodePointProgram from "./rendering/webgl/programs/node.point";
+import EdgeArrowProgram from "./rendering/webgl/programs/edge.arrow";
 
 /**
  * osigma.js settings
@@ -87,7 +88,7 @@ export interface Settings<
 
     // Program classes
     nodeProgramClasses: {
-        [type: string]: NodeProgramConstructor<
+        [type: number]: NodeProgramConstructor<
             TId,
             TConnectionWeight,
             TCoordinates,
@@ -97,7 +98,7 @@ export interface Settings<
         >;
     };
     nodeHoverProgramClasses: {
-        [type: string]: NodeProgramConstructor<
+        [type: number]: NodeProgramConstructor<
             TId,
             TConnectionWeight,
             TCoordinates,
@@ -107,7 +108,7 @@ export interface Settings<
         >;
     };
     edgeProgramClasses: {
-        [type: string]: EdgeProgramConstructor<
+        [type: number]: EdgeProgramConstructor<
             TId,
             TConnectionWeight,
             TCoordinates,
@@ -144,7 +145,7 @@ export const createDefaultSettings = <
 
     // Component rendering
     defaultNodeColor: 1,
-    defaultNodeSize: 2,
+    defaultNodeSize: 10,
     defaultNodeType: 0,
     defaultEdgeColor: 2,
     defaultEdgeType: 0,
@@ -259,6 +260,7 @@ export function resolveSettings<
     
     const default_edge_prograam_class = {
         0: EdgeLineProgram,
+        1: EdgeArrowProgram,
     };
 
     const default_settings = createDefaultSettings();

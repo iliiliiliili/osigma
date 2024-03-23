@@ -21,7 +21,7 @@ const webpackConfig = require("./web/webpack.config");
 export async function takeScreenshots(tests: Tests, folder: string, port = 8000, suffix = ""): Promise<void> {
   // Launch the browser
   const browser = await puppeteer.launch({
-    args: ["--window-size=800,600", "--font-render-hinting=none", "--disable-font-subpixel-positioning"],
+    args: ["--window-size=800,600", "--font-render-hinting=none", "--disable-font-subpixel-positioning", "--dumpio"],
   });
   const testPageUrl = `http://localhost:${port}`;
 
@@ -35,6 +35,7 @@ export async function takeScreenshots(tests: Tests, folder: string, port = 8000,
           // Navigate to URL
           await page.goto(testPageUrl);
           await page.exposeFunction("e2eTestScenario", test.scenario);
+          page.on('console', msg => console.log('PAGE LOG:', msg.text()));
 
           const dimensions = test.dimensions || { width: 800, height: 600 };
           await page.setViewport(dimensions);

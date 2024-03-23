@@ -2,8 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.decodeColor = exports.decodeLabel = exports.colorChoices = exports.labelChoices = void 0;
 exports.labelChoices = (function () {
-    var result = [];
-    for (var i = 0; i < 256; i++) {
+    var result = [""];
+    for (var i = 1; i < 256; i++) {
         result.push("l".concat(i));
     }
     return result;
@@ -24,7 +24,8 @@ exports.colorChoices = (function () {
     }
     return result;
 })();
-var decodeLabel = function (encoded) { return exports.labelChoices[encoded]; };
+
+var decodeLabel = function (encoded) {return exports.labelChoices[encoded]; };
 exports.decodeLabel = decodeLabel;
 var decodeColor = function (encoded) { return exports.colorChoices[encoded]; };
 exports.decodeColor = decodeColor;
