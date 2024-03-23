@@ -11,11 +11,27 @@
 import EdgeRectangleProgram from "./edge.rectangle";
 import VERTEX_SHADER_SOURCE from "../shaders/edge.clamped.vert.glsl";
 import { EdgeDisplayData, NodeDisplayData } from "../../../types";
+import { TypedArray } from "../../../core/ograph";
 import { floatColor } from "../../../utils";
+import { decodeColor } from "../../../value-choices";
 
 const { UNSIGNED_BYTE, FLOAT } = WebGLRenderingContext;
 
-export default class EdgeClampedProgram extends EdgeRectangleProgram {
+export default class EdgeClampedProgram<
+    TId extends TypedArray,
+    TConnectionWeight extends TypedArray,
+    TCoordinates extends TypedArray,
+    TZIndex extends TypedArray,
+    TNodeFeatures extends TypedArray[],
+    TConnectionFeatures extends TypedArray[]
+> extends EdgeRectangleProgram<
+    TId,
+    TConnectionWeight,
+    TCoordinates,
+    TZIndex,
+    TNodeFeatures,
+    TConnectionFeatures
+> {
     getDefinition() {
         return {
             ...super.getDefinition(),
@@ -24,25 +40,43 @@ export default class EdgeClampedProgram extends EdgeRectangleProgram {
             ATTRIBUTES: [
                 { name: "a_position", size: 2, type: FLOAT },
                 { name: "a_normal", size: 2, type: FLOAT },
-                { name: "a_color", size: 4, type: UNSIGNED_BYTE, normalized: true },
+                {
+                    name: "a_color",
+                    size: 4,
+                    type: UNSIGNED_BYTE,
+                    normalized: true,
+                },
                 { name: "a_radius", size: 1, type: FLOAT },
             ],
         };
     }
 
-    processVisibleItem(i: number, sourceData: NodeDisplayData, targetData: NodeDisplayData, data: EdgeDisplayData) {
-        const thickness = data.size || 1;
-        const x1 = sourceData.x;
-        const y1 = sourceData.y;
-        const x2 = targetData.x;
-        const y2 = targetData.y;
-        const color = floatColor(data.color);
+    processVisibleItem(i: number, edgeId: number) {
+        const fromId = this.graph.connections.from[edgeId];
+        const toId = this.graph.connections.to[edgeId];
+        const color = floatColor(
+            decodeColor(
+                this.graph.connections.features[
+                    this.renderer.connectionColorFeatureId
+                ][edgeId]
+            )
+        );
+
+        const thickness =
+            this.graph.connections.features[
+                this.renderer.connectionFlagsFeatureId
+            ][edgeId];
+        const x1 = this.graph.nodes.xCoordinates[fromId];
+        const y1 = this.graph.nodes.yCoordinates[fromId];
+        const x2 = this.graph.nodes.xCoordinates[toId];
+        const y2 = this.graph.nodes.yCoordinates[toId];
 
         // Computing normals
         const dx = x2 - x1;
         const dy = y2 - y1;
 
-        const radius = targetData.size || 1;
+        const radius =
+            this.graph.nodes.features[this.renderer.nodeSizeFeatureId][edgeId];
 
         let len = dx * dx + dy * dy;
         let n1 = 0;

@@ -1141,9 +1141,7 @@ export default class OSigma<
         //     );
 
         for (let i = 0, l = graph.connectionCount; i < l; i++) {
-            const [, , edgeType] = this.decodeEdgeFlags(
-                this.graph.nodes.features[this.nodeFlagsFeatureId][i]
-            );
+            const edgeType = this.getEdgeType(i);
             this.edgePrograms[edgeType].process(
                 edgesPerPrograms[edgeType]++,
                 i

@@ -16,16 +16,38 @@
  * @module
  */
 import { NodeDisplayData, EdgeDisplayData, RenderParams } from "../../../types";
+import { TypedArray } from "../../../core/ograph";
 import { floatColor } from "../../../utils";
+import { decodeColor } from "../../../value-choices";
 import { EdgeProgram } from "./common/edge";
 import VERTEX_SHADER_SOURCE from "../shaders/edge.rectangle.vert.glsl";
 import FRAGMENT_SHADER_SOURCE from "../shaders/edge.rectangle.frag.glsl";
 
 const { UNSIGNED_BYTE, FLOAT } = WebGLRenderingContext;
 
-const UNIFORMS = ["u_matrix", "u_zoomRatio", "u_sizeRatio", "u_correctionRatio"] as const;
+const UNIFORMS = [
+    "u_matrix",
+    "u_zoomRatio",
+    "u_sizeRatio",
+    "u_correctionRatio",
+] as const;
 
-export default class EdgeRectangleProgram extends EdgeProgram<typeof UNIFORMS[number]> {
+export default class EdgeRectangleProgram<
+    TId extends TypedArray,
+    TConnectionWeight extends TypedArray,
+    TCoordinates extends TypedArray,
+    TZIndex extends TypedArray,
+    TNodeFeatures extends TypedArray[],
+    TConnectionFeatures extends TypedArray[]
+> extends EdgeProgram<
+    TId,
+    TConnectionWeight,
+    TCoordinates,
+    TZIndex,
+    TNodeFeatures,
+    TConnectionFeatures,
+    (typeof UNIFORMS)[number]
+> {
     getDefinition() {
         return {
             VERTICES: 4,
@@ -36,12 +58,21 @@ export default class EdgeRectangleProgram extends EdgeProgram<typeof UNIFORMS[nu
             ATTRIBUTES: [
                 { name: "a_position", size: 2, type: FLOAT },
                 { name: "a_normal", size: 2, type: FLOAT },
-                { name: "a_color", size: 4, type: UNSIGNED_BYTE, normalized: true },
+                {
+                    name: "a_color",
+                    size: 4,
+                    type: UNSIGNED_BYTE,
+                    normalized: true,
+                },
             ],
         };
     }
 
     reallocateIndices() {
+        if (this.IndicesArray == null) {
+            return;
+        }
+
         const l = this.verticesCount;
         const size = l + l / 2;
         const indices = new this.IndicesArray(size);
@@ -58,13 +89,25 @@ export default class EdgeRectangleProgram extends EdgeProgram<typeof UNIFORMS[nu
         this.indicesArray = indices;
     }
 
-    processVisibleItem(i: number, sourceData: NodeDisplayData, targetData: NodeDisplayData, data: EdgeDisplayData) {
-        const thickness = data.size || 1;
-        const x1 = sourceData.x;
-        const y1 = sourceData.y;
-        const x2 = targetData.x;
-        const y2 = targetData.y;
-        const color = floatColor(data.color);
+    processVisibleItem(i: number, edgeId: number) {
+        const fromId = this.graph.connections.from[edgeId];
+        const toId = this.graph.connections.to[edgeId];
+        const color = floatColor(
+            decodeColor(
+                this.graph.connections.features[
+                    this.renderer.connectionColorFeatureId
+                ][edgeId]
+            )
+        );
+
+        const thickness =
+            this.graph.connections.features[
+                this.renderer.connectionFlagsFeatureId
+            ][edgeId];
+        const x1 = this.graph.nodes.xCoordinates[fromId];
+        const y1 = this.graph.nodes.yCoordinates[fromId];
+        const x2 = this.graph.nodes.xCoordinates[toId];
+        const y2 = this.graph.nodes.yCoordinates[toId];
 
         // Computing normals
         const dx = x2 - x1;
@@ -113,17 +156,26 @@ export default class EdgeRectangleProgram extends EdgeProgram<typeof UNIFORMS[nu
     }
 
     draw(params: RenderParams): void {
-        const gl = this.gl;
+        const { u_matrix, u_zoomRatio, u_correctionRatio, u_sizeRatio } =
+            this.uniformLocations;
 
-        const { u_matrix, u_zoomRatio, u_correctionRatio, u_sizeRatio } = this.uniformLocations;
+        this.gl?.uniformMatrix3fv(u_matrix, false, params.matrix);
+        this.gl?.uniform1f(u_zoomRatio, params.zoomRatio);
+        this.gl?.uniform1f(u_sizeRatio, params.sizeRatio);
+        this.gl?.uniform1f(u_correctionRatio, params.correctionRatio);
 
-        gl.uniformMatrix3fv(u_matrix, false, params.matrix);
-        gl.uniform1f(u_zoomRatio, params.zoomRatio);
-        gl.uniform1f(u_sizeRatio, params.sizeRatio);
-        gl.uniform1f(u_correctionRatio, params.correctionRatio);
+        if (!this.indicesArray)
+            throw new Error(
+                "EdgeRectangleProgram: indicesArray should be allocated when drawing!"
+            );
 
-        if (!this.indicesArray) throw new Error("EdgeRectangleProgram: indicesArray should be allocated when drawing!");
-
-        gl.drawElements(gl.TRIANGLES, this.indicesArray.length, this.indicesType, 0);
+        if (this.indicesType != null) {
+            this.gl?.drawElements(
+                this.gl.TRIANGLES,
+                this.indicesArray.length,
+                this.indicesType,
+                0
+            );
+        }
     }
 }

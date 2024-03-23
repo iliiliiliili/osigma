@@ -125,6 +125,10 @@ export class OGraph<
         return this.nodeCount;
     }
 
+    public getImageFeatureValue(nodeId: number): string {
+        return "none.png"
+    }
+
     public someEdge(
         predicate: (
             connectionId: number,

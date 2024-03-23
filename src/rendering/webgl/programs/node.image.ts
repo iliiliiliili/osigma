@@ -6,12 +6,20 @@
  * the classic colored disc.
  * @module
  */
-import { Coordinates, Dimensions, NodeDisplayData, RenderParams } from "../../../types";
+import {
+    Coordinates,
+    Dimensions,
+    NodeDisplayData,
+    RenderParams,
+} from "../../../types";
+import { TypedArray } from "../../../core/ograph";
 import { floatColor } from "../../../utils";
+import { decodeColor } from "../../../value-choices";
 import VERTEX_SHADER_SOURCE from "../shaders/node.image.vert.glsl";
 import FRAGMENT_SHADER_SOURCE from "../shaders/node.image.frag.glsl";
 import { NodeProgram, NodeProgramConstructor } from "./common/node";
 import OSigma from "../../../osigma";
+import { UncertainWebGL2RenderingContext } from "./common/program";
 
 // maximum size of single texture in atlas
 const MAX_TEXTURE_SIZE = 192;
@@ -30,7 +38,21 @@ type ImageType = ImageLoading | ImageError | ImagePending | ImageReady;
  * hovered nodes (to prevent some flickering, mostly), this program must be
  * "built" for each osigma instance:
  */
-export default function getNodeImageProgram(): NodeProgramConstructor {
+export default function getNodeImageProgram<
+    TId extends TypedArray,
+    TConnectionWeight extends TypedArray,
+    TCoordinates extends TypedArray,
+    TZIndex extends TypedArray,
+    TNodeFeatures extends TypedArray[],
+    TConnectionFeatures extends TypedArray[]
+>(): NodeProgramConstructor<
+    TId,
+    TConnectionWeight,
+    TCoordinates,
+    TZIndex,
+    TNodeFeatures,
+    TConnectionFeatures
+> {
     /**
      * These attributes are shared between all instances of this exact class,
      * returned by this call to getNodeProgramImage:
@@ -67,7 +89,9 @@ export default function getNodeImageProgram(): NodeProgramConstructor {
             };
 
             if (typeof pendingImagesFrameID !== "number") {
-                pendingImagesFrameID = requestAnimationFrame(() => finalizePendingImages());
+                pendingImagesFrameID = requestAnimationFrame(() =>
+                    finalizePendingImages()
+                );
             }
         });
         image.addEventListener("error", () => {
@@ -102,7 +126,9 @@ export default function getNodeImageProgram(): NodeProgramConstructor {
 
         // Add images to texture:
         const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d", { willReadFrequently: true }) as CanvasRenderingContext2D;
+        const ctx = canvas.getContext("2d", {
+            willReadFrequently: true,
+        }) as CanvasRenderingContext2D;
 
         // limit canvas size to avoid browser and platform limits
         let totalWidth = hasReceivedImages ? textureImage.width : 0;
@@ -139,7 +165,17 @@ export default function getNodeImageProgram(): NodeProgramConstructor {
                 } else {
                     dy = (image.height - image.width) / 2;
                 }
-                ctx.drawImage(image, dx, dy, size, size, xOffset, yOffset, imageSizeInTexture, imageSizeInTexture);
+                ctx.drawImage(
+                    image,
+                    dx,
+                    dy,
+                    size,
+                    size,
+                    xOffset,
+                    yOffset,
+                    imageSizeInTexture,
+                    imageSizeInTexture
+                );
 
                 // Update image state:
                 images[id] = {
@@ -166,7 +202,10 @@ export default function getNodeImageProgram(): NodeProgramConstructor {
                 // existing row is full: flush row and continue on next line
                 if (rowImages.length > 0) {
                     totalWidth = Math.max(writePositionX, totalWidth);
-                    totalHeight = Math.max(writePositionY + writeRowHeight, totalHeight);
+                    totalHeight = Math.max(
+                        writePositionY + writeRowHeight,
+                        totalHeight
+                    );
                     drawRow(rowImages);
 
                     rowImages = [];
@@ -196,11 +235,31 @@ export default function getNodeImageProgram(): NodeProgramConstructor {
         rebindTextureFns.forEach((fn) => fn());
     }
 
-    const { UNSIGNED_BYTE, FLOAT } = WebGLRenderingContext;
+    const { UNSIGNED_BYTE, FLOAT } = UncertainWebGL2RenderingContext;
 
-    const UNIFORMS = ["u_sizeRatio", "u_pixelRatio", "u_matrix", "u_atlas"] as const;
+    const UNIFORMS = [
+        "u_sizeRatio",
+        "u_pixelRatio",
+        "u_matrix",
+        "u_atlas",
+    ] as const;
 
-    return class NodeImageProgram extends NodeProgram<typeof UNIFORMS[number]> {
+    return class NodeImageProgram<
+        TId extends TypedArray,
+        TConnectionWeight extends TypedArray,
+        TCoordinates extends TypedArray,
+        TZIndex extends TypedArray,
+        TNodeFeatures extends TypedArray[],
+        TConnectionFeatures extends TypedArray[]
+    > extends NodeProgram<
+        TId,
+        TConnectionWeight,
+        TCoordinates,
+        TZIndex,
+        TNodeFeatures,
+        TConnectionFeatures,
+        (typeof UNIFORMS)[number]
+    > {
         getDefinition() {
             return {
                 VERTICES: 1,
@@ -211,17 +270,36 @@ export default function getNodeImageProgram(): NodeProgramConstructor {
                 ATTRIBUTES: [
                     { name: "a_position", size: 2, type: FLOAT },
                     { name: "a_size", size: 1, type: FLOAT },
-                    { name: "a_color", size: 4, type: UNSIGNED_BYTE, normalized: true },
+                    {
+                        name: "a_color",
+                        size: 4,
+                        type: UNSIGNED_BYTE,
+                        normalized: true,
+                    },
                     { name: "a_texture", size: 4, type: FLOAT },
                 ],
             };
         }
 
-        texture: WebGLTexture;
+        texture: WebGLTexture | null = null;
         latestRenderParams?: RenderParams;
 
-        constructor(gl: WebGLRenderingContext, renderer: OSigma) {
+        constructor(
+            gl: WebGLRenderingContext,
+            renderer: OSigma<
+                TId,
+                TConnectionWeight,
+                TCoordinates,
+                TZIndex,
+                TNodeFeatures,
+                TConnectionFeatures
+            >
+        ) {
             super(gl, renderer);
+            
+            if (typeof gl === "undefined") {
+                return;
+            }
 
             rebindTextureFns.push(() => {
                 if (this && this.rebindTexture) this.rebindTexture();
@@ -232,30 +310,50 @@ export default function getNodeImageProgram(): NodeProgramConstructor {
 
             this.texture = gl.createTexture() as WebGLTexture;
             gl.bindTexture(gl.TEXTURE_2D, this.texture);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 0]));
+            gl.texImage2D(
+                gl.TEXTURE_2D,
+                0,
+                gl.RGBA,
+                1,
+                1,
+                0,
+                gl.RGBA,
+                gl.UNSIGNED_BYTE,
+                new Uint8Array([0, 0, 0, 0])
+            );
         }
 
         rebindTexture() {
-            const gl = this.gl;
 
-            gl.bindTexture(gl.TEXTURE_2D, this.texture);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, textureImage);
-            gl.generateMipmap(gl.TEXTURE_2D);
+            this.gl?.bindTexture(this.gl.TEXTURE_2D, this.texture);
+            this.gl?.texImage2D(
+                this.gl.TEXTURE_2D,
+                0,
+                this.gl.RGBA,
+                this.gl.RGBA,
+                this.gl.UNSIGNED_BYTE,
+                textureImage
+            );
+            this.gl?.generateMipmap(this.gl.TEXTURE_2D);
 
             if (this.latestRenderParams) this.render(this.latestRenderParams);
         }
 
-        processVisibleItem(i: number, data: NodeDisplayData & { image?: string }): void {
+        processVisibleItem(
+            i: number,
+            nodeId: number,
+        ): void {
             const array = this.array;
 
-            const imageSource = data.image;
+            const imageSource = this.graph.getImageFeatureValue(nodeId);
             const imageState = imageSource && images[imageSource];
-            if (typeof imageSource === "string" && !imageState) loadImage(imageSource);
+            if (typeof imageSource === "string" && !imageState)
+                loadImage(imageSource);
 
-            array[i++] = data.x;
-            array[i++] = data.y;
-            array[i++] = data.size;
-            array[i++] = floatColor(data.color);
+            array[i++] = this.graph.nodes.xCoordinates[nodeId];
+            array[i++] = this.graph.nodes.yCoordinates[nodeId];
+            array[i++] = this.graph.nodes.features[this.renderer.nodeSizeFeatureId][nodeId];
+            array[i] = floatColor(decodeColor(this.graph.nodes.features[this.renderer.nodeColorFeatureId][nodeId]));
 
             // Reference texture:
             if (imageState && imageState.status === "ready") {
@@ -275,16 +373,15 @@ export default function getNodeImageProgram(): NodeProgramConstructor {
         draw(params: RenderParams): void {
             this.latestRenderParams = params;
 
-            const gl = this.gl;
+            const { u_sizeRatio, u_pixelRatio, u_matrix, u_atlas } =
+                this.uniformLocations;
 
-            const { u_sizeRatio, u_pixelRatio, u_matrix, u_atlas } = this.uniformLocations;
+            this.gl?.uniform1f(u_sizeRatio, params.sizeRatio);
+            this.gl?.uniform1f(u_pixelRatio, params.pixelRatio);
+            this.gl?.uniformMatrix3fv(u_matrix, false, params.matrix);
+            this.gl?.uniform1i(u_atlas, 0);
 
-            gl.uniform1f(u_sizeRatio, params.sizeRatio);
-            gl.uniform1f(u_pixelRatio, params.pixelRatio);
-            gl.uniformMatrix3fv(u_matrix, false, params.matrix);
-            gl.uniform1i(u_atlas, 0);
-
-            gl.drawArrays(gl.POINTS, 0, this.verticesCount);
+            this.gl?.drawArrays(this.gl.POINTS, 0, this.verticesCount);
         }
     };
 }

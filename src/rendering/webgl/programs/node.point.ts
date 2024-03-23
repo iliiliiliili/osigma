@@ -9,8 +9,8 @@
  */
 import { NodeDisplayData, RenderParams } from "../../../types";
 import { TypedArray } from "../../../core/ograph";
-import { decodeColor } from "../../../value-choices";
 import { floatColor } from "../../../utils";
+import { decodeColor } from "../../../value-choices";
 import { NodeProgram } from "./common/node";
 import { UncertainWebGL2RenderingContext } from "./common/program";
 import VERTEX_SHADER_SOURCE from "../shaders/node.point.vert.glsl";
