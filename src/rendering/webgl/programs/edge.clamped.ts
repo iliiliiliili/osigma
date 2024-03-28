@@ -13,9 +13,9 @@ import VERTEX_SHADER_SOURCE from "../shaders/edge.clamped.vert.glsl";
 import { EdgeDisplayData, NodeDisplayData } from "../../../types";
 import { TypedArray } from "../../../core/ograph";
 import { floatColor } from "../../../utils";
-import { decodeColor } from "../../../value-choices";
+import { UncertainWebGL2RenderingContext } from "./common/program";
 
-const { UNSIGNED_BYTE, FLOAT } = WebGLRenderingContext;
+const { UNSIGNED_BYTE, FLOAT } = UncertainWebGL2RenderingContext;
 
 export default class EdgeClampedProgram<
     TId extends TypedArray,
@@ -55,7 +55,7 @@ export default class EdgeClampedProgram<
         const fromId = this.graph.connections.from[edgeId];
         const toId = this.graph.connections.to[edgeId];
         const color = floatColor(
-            decodeColor(
+            this.renderer.valueChoices.decodeColor(
                 this.graph.connections.features[
                     this.renderer.connectionColorFeatureId
                 ][edgeId]

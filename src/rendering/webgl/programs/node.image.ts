@@ -14,7 +14,6 @@ import {
 } from "../../../types";
 import { TypedArray } from "../../../core/ograph";
 import { floatColor } from "../../../utils";
-import { decodeColor } from "../../../value-choices";
 import VERTEX_SHADER_SOURCE from "../shaders/node.image.vert.glsl";
 import FRAGMENT_SHADER_SOURCE from "../shaders/node.image.frag.glsl";
 import { NodeProgram, NodeProgramConstructor } from "./common/node";
@@ -296,7 +295,7 @@ export default function getNodeImageProgram<
             >
         ) {
             super(gl, renderer);
-            
+
             if (typeof gl === "undefined") {
                 return;
             }
@@ -324,7 +323,6 @@ export default function getNodeImageProgram<
         }
 
         rebindTexture() {
-
             this.gl?.bindTexture(this.gl.TEXTURE_2D, this.texture);
             this.gl?.texImage2D(
                 this.gl.TEXTURE_2D,
@@ -339,10 +337,7 @@ export default function getNodeImageProgram<
             if (this.latestRenderParams) this.render(this.latestRenderParams);
         }
 
-        processVisibleItem(
-            i: number,
-            nodeId: number,
-        ): void {
+        processVisibleItem(i: number, nodeId: number): void {
             const array = this.array;
 
             const imageSource = this.graph.getImageFeatureValue(nodeId);
@@ -352,8 +347,17 @@ export default function getNodeImageProgram<
 
             array[i++] = this.graph.nodes.xCoordinates[nodeId];
             array[i++] = this.graph.nodes.yCoordinates[nodeId];
-            array[i++] = this.graph.nodes.features[this.renderer.nodeSizeFeatureId][nodeId];
-            array[i] = floatColor(decodeColor(this.graph.nodes.features[this.renderer.nodeColorFeatureId][nodeId]));
+            array[i++] =
+                this.graph.nodes.features[this.renderer.nodeSizeFeatureId][
+                    nodeId
+                ];
+            array[i] = floatColor(
+                this.renderer.valueChoices.decodeColor(
+                    this.graph.nodes.features[this.renderer.nodeColorFeatureId][
+                        nodeId
+                    ]
+                )
+            );
 
             // Reference texture:
             if (imageState && imageState.status === "ready") {

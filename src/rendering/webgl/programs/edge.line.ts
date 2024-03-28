@@ -9,7 +9,6 @@
 import { NodeDisplayData, EdgeDisplayData, RenderParams } from "../../../types";
 import { TypedArray } from "../../../core/ograph";
 import { floatColor } from "../../../utils";
-import { decodeColor } from "../../../value-choices";
 import { EdgeProgram } from "./common/edge";
 import { UncertainWebGL2RenderingContext } from "./common/program";
 import VERTEX_SHADER_SOURCE from "../shaders/edge.line.vert.glsl";
@@ -60,7 +59,7 @@ export default class EdgeLineProgram<
         const fromId = this.graph.connections.from[edgeId];
         const toId = this.graph.connections.to[edgeId];
         const color = floatColor(
-            decodeColor(
+            this.renderer.valueChoices.decodeColor(
                 this.graph.connections.features[
                     this.renderer.connectionColorFeatureId
                 ][edgeId]

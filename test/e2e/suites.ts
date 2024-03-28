@@ -1,13 +1,16 @@
 import { Page } from "puppeteer";
 
 import OSigma from "../../src";
-import { OGraph } from "../../src/core/ograph";
+import { OGraph, TypedArray } from "../../src/core/ograph";
 import {
     NodeDisplayData,
     EdgeDisplayData,
     TNodeVisual,
     TConnectionVisual,
+    nodeVisualConstructorFromData,
+    connectionVisualConstructorFromData,
 } from "../../src/types";
+import { ValueChoices } from "../../src/value-choices";
 
 type TId = Int32Array;
 type TConnectionWeight = Uint8Array;
@@ -21,6 +24,32 @@ type TestDependencies = {
     OGraph: typeof OGraph;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     programs: { [key: string]: any };
+    data: {
+        arcticBig: [
+            OGraph<
+                TId,
+                TConnectionWeight,
+                TCoordinates,
+                TZIndex,
+                [...TNodeFeatures, ...TNodeVisual],
+                [...TConnectionFeatures, ...TConnectionVisual]
+            >,
+            ValueChoices
+        ];
+        arcticSmall: [
+            OGraph<
+                TId,
+                TConnectionWeight,
+                TCoordinates,
+                TZIndex,
+                [...TNodeFeatures, ...TNodeVisual],
+                [...TConnectionFeatures, ...TConnectionVisual]
+            >,
+            ValueChoices
+        ];
+    };
+    nodeVisualConstructorFromData: typeof nodeVisualConstructorFromData;
+    connectionVisualConstructorFromData: typeof connectionVisualConstructorFromData;
     container: HTMLElement;
 };
 
@@ -41,7 +70,13 @@ export const tests: Tests = [
         name: "single-node",
         scenario: async (page: Page): Promise<void> => {
             await page.evaluate(() => {
-                const { OSigma, OGraph, container } = dependencies;
+                const {
+                    OSigma,
+                    OGraph,
+                    container,
+                    nodeVisualConstructorFromData,
+                    connectionVisualConstructorFromData,
+                } = dependencies;
 
                 const defaultNodeFlags = OSigma.encodeNodeFlags(
                     false,
@@ -56,6 +91,20 @@ export const tests: Tests = [
                     0
                 );
 
+                // Feature0, TColor, TLabel, TSize, TEdgeFlags
+                const features: TypedArray[] = [new Int8Array([10])];
+
+                // eslint-disable-next-line prefer-spread
+                features.push.apply(
+                    features,
+                    nodeVisualConstructorFromData(
+                        [111],
+                        [0],
+                        [10],
+                        [defaultNodeFlags]
+                    )
+                );
+
                 const graph = new OGraph<
                     TId,
                     TConnectionWeight,
@@ -65,13 +114,9 @@ export const tests: Tests = [
                     [...TConnectionFeatures, ...TConnectionVisual]
                 >(
                     {
-                        features: [
-                            // Feature0, TColor, TLabel, TSize, TEdgeFlags
-                            new Int8Array([10]),
-                            new Uint8Array([111]),
-                            new Uint8Array([0]),
-                            new Uint8Array([10]),
-                            new Uint8Array([defaultNodeFlags]),
+                        features: features as [
+                            ...TNodeFeatures,
+                            ...TNodeVisual
                         ],
                         xCoordinates: new Float32Array([0]),
                         yCoordinates: new Float32Array([0]),
@@ -82,13 +127,12 @@ export const tests: Tests = [
                         to: new Int32Array([0]),
                         value: new Uint8Array([0]),
                         zIndex: new Uint8Array([0]),
-                        features: [
-                            // TColor, TLabel, TSize, TEdgeFlags
-                            new Uint8Array([2]),
-                            new Uint8Array([0]),
-                            new Uint8Array([10]),
-                            new Uint8Array([defaultEdgeFlags]),
-                        ],
+                        features: connectionVisualConstructorFromData(
+                            [2],
+                            [0],
+                            [10],
+                            [defaultEdgeFlags]
+                        ),
                     }
                 );
 
@@ -100,7 +144,13 @@ export const tests: Tests = [
         name: "square",
         scenario: async (page: Page): Promise<void> => {
             await page.evaluate(() => {
-                const { OSigma, OGraph, container } = dependencies;
+                const {
+                    OSigma,
+                    OGraph,
+                    container,
+                    nodeVisualConstructorFromData,
+                    connectionVisualConstructorFromData,
+                } = dependencies;
 
                 const defaultNodeFlags = OSigma.encodeNodeFlags(
                     false,
@@ -115,10 +165,27 @@ export const tests: Tests = [
                     0
                 );
 
-                const arrowEdgeFlags = OSigma.encodeEdgeFlags(
-                    false,
-                    false,
-                    1
+                const arrowEdgeFlags = OSigma.encodeEdgeFlags(false, false, 1);
+
+                // Feature0, TColor, TLabel, TSize, TEdgeFlags
+                const features: TypedArray[] = [
+                    new Int8Array([10, 11, 12, 13]),
+                ];
+
+                // eslint-disable-next-line prefer-spread
+                features.push.apply(
+                    features,
+                    nodeVisualConstructorFromData(
+                        [111, 112, 113, 114],
+                        [1, 2, 3, 4],
+                        [10, 10, 10, 10],
+                        [
+                            defaultNodeFlags,
+                            defaultNodeFlags,
+                            defaultNodeFlags,
+                            defaultNodeFlags,
+                        ]
+                    )
                 );
 
                 const graph = new OGraph<
@@ -130,13 +197,9 @@ export const tests: Tests = [
                     [...TConnectionFeatures, ...TConnectionVisual]
                 >(
                     {
-                        features: [
-                            // Feature0, TColor, TLabel, TSize, TEdgeFlags
-                            new Int8Array([10, 11, 12, 13]),
-                            new Uint8Array([111, 112, 113, 114]),
-                            new Uint8Array([1, 2, 3, 4]),
-                            new Uint8Array([10, 10, 10, 10]),
-                            new Uint8Array([defaultNodeFlags, defaultNodeFlags, defaultNodeFlags, defaultNodeFlags]),
+                        features: features as [
+                            ...TNodeFeatures,
+                            ...TNodeVisual
                         ],
                         xCoordinates: new Float32Array([0, 0, 10, 10]),
                         yCoordinates: new Float32Array([0, 10, 10, 0]),
@@ -147,13 +210,21 @@ export const tests: Tests = [
                         to: new Int32Array([1, 2, 3, 0, 2, 3]),
                         value: new Uint8Array([0, 2, 1, 2, 4, 5]),
                         zIndex: new Uint8Array([0, 0, 0, 0, 0, 0]),
-                        features: [
+                        features:
                             // TColor, TLabel, TSize, TEdgeFlags
-                            new Uint8Array([129, 129, 129, 129, 111, 111]),
-                            new Uint8Array([0, 0, 0, 0]),
-                            new Uint8Array([5, 5, 5, 5]),
-                            new Uint8Array([arrowEdgeFlags, arrowEdgeFlags, arrowEdgeFlags, arrowEdgeFlags, defaultEdgeFlags, defaultEdgeFlags]),
-                        ],
+                            connectionVisualConstructorFromData(
+                                [129, 129, 129, 129, 111, 111],
+                                [0, 0, 0, 0, 0, 0],
+                                [5, 5, 5, 5, 5, 5],
+                                [
+                                    arrowEdgeFlags,
+                                    arrowEdgeFlags,
+                                    arrowEdgeFlags,
+                                    arrowEdgeFlags,
+                                    defaultEdgeFlags,
+                                    defaultEdgeFlags,
+                                ]
+                            ),
                     }
                 );
 
@@ -173,7 +244,13 @@ export const tests: Tests = [
         name: "aspect-ratio-vertical-graph-horizontal-container",
         scenario: async (page: Page): Promise<void> => {
             await page.evaluate(() => {
-                const { OSigma, OGraph, container } = dependencies;
+                const {
+                    OSigma,
+                    OGraph,
+                    container,
+                    nodeVisualConstructorFromData,
+                    connectionVisualConstructorFromData,
+                } = dependencies;
 
                 const defaultNodeFlags = OSigma.encodeNodeFlags(
                     false,
@@ -188,6 +265,27 @@ export const tests: Tests = [
                     0
                 );
 
+                // Feature0, TColor, TLabel, TSize, TEdgeFlags
+                const features: TypedArray[] = [
+                    new Int8Array([10, 11, 12, 13]),
+                ];
+
+                // eslint-disable-next-line prefer-spread
+                features.push.apply(
+                    features,
+                    nodeVisualConstructorFromData(
+                        [111, 112, 113, 114],
+                        [1, 2, 3, 4],
+                        [10, 10, 10, 10],
+                        [
+                            defaultNodeFlags,
+                            defaultNodeFlags,
+                            defaultNodeFlags,
+                            defaultNodeFlags,
+                        ]
+                    )
+                );
+
                 const graph = new OGraph<
                     TId,
                     TConnectionWeight,
@@ -197,13 +295,9 @@ export const tests: Tests = [
                     [...TConnectionFeatures, ...TConnectionVisual]
                 >(
                     {
-                        features: [
-                            // Feature0, TColor, TLabel, TSize, TEdgeFlags
-                            new Int8Array([10, 11, 12, 13]),
-                            new Uint8Array([111, 112, 113, 114]),
-                            new Uint8Array([1, 2, 3, 4]),
-                            new Uint8Array([10, 10, 10, 10]),
-                            new Uint8Array([defaultNodeFlags, defaultNodeFlags, defaultNodeFlags, defaultNodeFlags]),
+                        features: features as [
+                            ...TNodeFeatures,
+                            ...TNodeVisual
                         ],
                         xCoordinates: new Float32Array([0, 0, 5, 5]),
                         yCoordinates: new Float32Array([0, 10, 10, 0]),
@@ -214,22 +308,18 @@ export const tests: Tests = [
                         to: new Int32Array([2, 3]),
                         value: new Uint8Array([4, 5]),
                         zIndex: new Uint8Array([0, 0]),
-                        features: [
+                        features:
                             // TColor, TLabel, TSize, TEdgeFlags
-                            new Uint8Array([129, 129]),
-                            new Uint8Array([0, 0]),
-                            new Uint8Array([5, 5]),
-                            new Uint8Array([defaultEdgeFlags, defaultEdgeFlags]),
-                        ],
+                            connectionVisualConstructorFromData(
+                                [129, 129],
+                                [0, 0],
+                                [5, 5],
+                                [defaultEdgeFlags, defaultEdgeFlags]
+                            ),
                     }
                 );
 
-                new OSigma(
-                    graph,
-                    container,
-                    {},
-                    false
-                );
+                new OSigma(graph, container, {}, false);
             });
         },
         dimensions: { width: 800, height: 400 },
@@ -238,7 +328,13 @@ export const tests: Tests = [
         name: "aspect-ratio-horizontal-graph-horizontal-container",
         scenario: async (page: Page): Promise<void> => {
             await page.evaluate(() => {
-                const { OSigma, OGraph, container } = dependencies;
+                const {
+                    OSigma,
+                    OGraph,
+                    container,
+                    nodeVisualConstructorFromData,
+                    connectionVisualConstructorFromData,
+                } = dependencies;
 
                 const defaultNodeFlags = OSigma.encodeNodeFlags(
                     false,
@@ -253,6 +349,27 @@ export const tests: Tests = [
                     0
                 );
 
+                // Feature0, TColor, TLabel, TSize, TEdgeFlags
+                const features: TypedArray[] = [
+                    new Int8Array([10, 11, 12, 13]),
+                ];
+
+                // eslint-disable-next-line prefer-spread
+                features.push.apply(
+                    features,
+                    nodeVisualConstructorFromData(
+                        [111, 112, 113, 114],
+                        [1, 2, 3, 4],
+                        [10, 10, 10, 10],
+                        [
+                            defaultNodeFlags,
+                            defaultNodeFlags,
+                            defaultNodeFlags,
+                            defaultNodeFlags,
+                        ]
+                    )
+                );
+
                 const graph = new OGraph<
                     TId,
                     TConnectionWeight,
@@ -262,13 +379,9 @@ export const tests: Tests = [
                     [...TConnectionFeatures, ...TConnectionVisual]
                 >(
                     {
-                        features: [
-                            // Feature0, TColor, TLabel, TSize, TEdgeFlags
-                            new Int8Array([10, 11, 12, 13]),
-                            new Uint8Array([111, 112, 113, 114]),
-                            new Uint8Array([1, 2, 3, 4]),
-                            new Uint8Array([10, 10, 10, 10]),
-                            new Uint8Array([defaultNodeFlags, defaultNodeFlags, defaultNodeFlags, defaultNodeFlags]),
+                        features: features as [
+                            ...TNodeFeatures,
+                            ...TNodeVisual
                         ],
                         xCoordinates: new Float32Array([0, 0, 10, 10]),
                         yCoordinates: new Float32Array([0, 5, 5, 0]),
@@ -279,22 +392,18 @@ export const tests: Tests = [
                         to: new Int32Array([2, 3]),
                         value: new Uint8Array([4, 5]),
                         zIndex: new Uint8Array([0, 0]),
-                        features: [
+                        features:
                             // TColor, TLabel, TSize, TEdgeFlags
-                            new Uint8Array([129, 129]),
-                            new Uint8Array([0, 0]),
-                            new Uint8Array([5, 5]),
-                            new Uint8Array([defaultEdgeFlags, defaultEdgeFlags]),
-                        ],
+                            connectionVisualConstructorFromData(
+                                [129, 129],
+                                [0, 0],
+                                [5, 5],
+                                [defaultEdgeFlags, defaultEdgeFlags]
+                            ),
                     }
                 );
 
-                new OSigma(
-                    graph,
-                    container,
-                    {},
-                    false
-                );
+                new OSigma(graph, container, {}, false);
             });
         },
         dimensions: { width: 800, height: 400 },
@@ -303,8 +412,13 @@ export const tests: Tests = [
         name: "aspect-ratio-horizontal-graph-vertical-container",
         scenario: async (page: Page): Promise<void> => {
             await page.evaluate(() => {
-               
-                const { OSigma, OGraph, container } = dependencies;
+                const {
+                    OSigma,
+                    OGraph,
+                    container,
+                    nodeVisualConstructorFromData,
+                    connectionVisualConstructorFromData,
+                } = dependencies;
 
                 const defaultNodeFlags = OSigma.encodeNodeFlags(
                     false,
@@ -319,6 +433,27 @@ export const tests: Tests = [
                     0
                 );
 
+                // Feature0, TColor, TLabel, TSize, TEdgeFlags
+                const features: TypedArray[] = [
+                    new Int8Array([10, 11, 12, 13]),
+                ];
+
+                // eslint-disable-next-line prefer-spread
+                features.push.apply(
+                    features,
+                    nodeVisualConstructorFromData(
+                        [111, 112, 113, 114],
+                        [1, 2, 3, 4],
+                        [10, 10, 10, 10],
+                        [
+                            defaultNodeFlags,
+                            defaultNodeFlags,
+                            defaultNodeFlags,
+                            defaultNodeFlags,
+                        ]
+                    )
+                );
+
                 const graph = new OGraph<
                     TId,
                     TConnectionWeight,
@@ -328,13 +463,9 @@ export const tests: Tests = [
                     [...TConnectionFeatures, ...TConnectionVisual]
                 >(
                     {
-                        features: [
-                            // Feature0, TColor, TLabel, TSize, TEdgeFlags
-                            new Int8Array([10, 11, 12, 13]),
-                            new Uint8Array([111, 112, 113, 114]),
-                            new Uint8Array([1, 2, 3, 4]),
-                            new Uint8Array([10, 10, 10, 10]),
-                            new Uint8Array([defaultNodeFlags, defaultNodeFlags, defaultNodeFlags, defaultNodeFlags]),
+                        features: features as [
+                            ...TNodeFeatures,
+                            ...TNodeVisual
                         ],
                         xCoordinates: new Float32Array([0, 0, 10, 10]),
                         yCoordinates: new Float32Array([0, 5, 5, 0]),
@@ -345,22 +476,18 @@ export const tests: Tests = [
                         to: new Int32Array([2, 3]),
                         value: new Uint8Array([4, 5]),
                         zIndex: new Uint8Array([0, 0]),
-                        features: [
+                        features:
                             // TColor, TLabel, TSize, TEdgeFlags
-                            new Uint8Array([129, 129]),
-                            new Uint8Array([0, 0]),
-                            new Uint8Array([5, 5]),
-                            new Uint8Array([defaultEdgeFlags, defaultEdgeFlags]),
-                        ],
+                            connectionVisualConstructorFromData(
+                                [129, 129],
+                                [0, 0],
+                                [5, 5],
+                                [defaultEdgeFlags, defaultEdgeFlags]
+                            ),
                     }
                 );
 
-                new OSigma(
-                    graph,
-                    container,
-                    {},
-                    false
-                );
+                new OSigma(graph, container, {}, false);
             });
         },
         dimensions: { width: 400, height: 800 },
@@ -369,7 +496,13 @@ export const tests: Tests = [
         name: "aspect-ratio-vertical-graph-vertical-container",
         scenario: async (page: Page): Promise<void> => {
             await page.evaluate(() => {
-                const { OSigma, OGraph, container } = dependencies;
+                const {
+                    OSigma,
+                    OGraph,
+                    container,
+                    nodeVisualConstructorFromData,
+                    connectionVisualConstructorFromData,
+                } = dependencies;
 
                 const defaultNodeFlags = OSigma.encodeNodeFlags(
                     false,
@@ -384,6 +517,27 @@ export const tests: Tests = [
                     0
                 );
 
+                // Feature0, TColor, TLabel, TSize, TEdgeFlags
+                const features: TypedArray[] = [
+                    new Int8Array([10, 11, 12, 13]),
+                ];
+
+                // eslint-disable-next-line prefer-spread
+                features.push.apply(
+                    features,
+                    nodeVisualConstructorFromData(
+                        [111, 112, 113, 114],
+                        [1, 2, 3, 4],
+                        [10, 10, 10, 10],
+                        [
+                            defaultNodeFlags,
+                            defaultNodeFlags,
+                            defaultNodeFlags,
+                            defaultNodeFlags,
+                        ]
+                    )
+                );
+
                 const graph = new OGraph<
                     TId,
                     TConnectionWeight,
@@ -393,13 +547,9 @@ export const tests: Tests = [
                     [...TConnectionFeatures, ...TConnectionVisual]
                 >(
                     {
-                        features: [
-                            // Feature0, TColor, TLabel, TSize, TEdgeFlags
-                            new Int8Array([10, 11, 12, 13]),
-                            new Uint8Array([111, 112, 113, 114]),
-                            new Uint8Array([1, 2, 3, 4]),
-                            new Uint8Array([10, 10, 10, 10]),
-                            new Uint8Array([defaultNodeFlags, defaultNodeFlags, defaultNodeFlags, defaultNodeFlags]),
+                        features: features as [
+                            ...TNodeFeatures,
+                            ...TNodeVisual
                         ],
                         xCoordinates: new Float32Array([0, 0, 5, 5]),
                         yCoordinates: new Float32Array([0, 10, 10, 0]),
@@ -410,22 +560,18 @@ export const tests: Tests = [
                         to: new Int32Array([2, 3]),
                         value: new Uint8Array([4, 5]),
                         zIndex: new Uint8Array([0, 0]),
-                        features: [
+                        features:
                             // TColor, TLabel, TSize, TEdgeFlags
-                            new Uint8Array([129, 129]),
-                            new Uint8Array([0, 0]),
-                            new Uint8Array([5, 5]),
-                            new Uint8Array([defaultEdgeFlags, defaultEdgeFlags]),
-                        ],
+                            connectionVisualConstructorFromData(
+                                [129, 129],
+                                [0, 0],
+                                [5, 5],
+                                [defaultEdgeFlags, defaultEdgeFlags]
+                            ),
                     }
                 );
 
-                new OSigma(
-                    graph,
-                    container,
-                    {},
-                    false
-                );
+                new OSigma(graph, container, {}, false);
             });
         },
         dimensions: { width: 400, height: 800 },
@@ -434,7 +580,13 @@ export const tests: Tests = [
         name: "settings",
         scenario: async (page: Page): Promise<void> => {
             await page.evaluate(() => {
-                const { OSigma, OGraph, container } = dependencies;
+                const {
+                    OSigma,
+                    OGraph,
+                    container,
+                    nodeVisualConstructorFromData,
+                    connectionVisualConstructorFromData,
+                } = dependencies;
 
                 const defaultNodeFlags = OSigma.encodeNodeFlags(
                     false,
@@ -449,6 +601,27 @@ export const tests: Tests = [
                     0
                 );
 
+                // Feature0, TColor, TLabel, TSize, TEdgeFlags
+                const features: TypedArray[] = [
+                    new Int8Array([10, 11, 12, 13]),
+                ];
+
+                // eslint-disable-next-line prefer-spread
+                features.push.apply(
+                    features,
+                    nodeVisualConstructorFromData(
+                        [0, 0, 0, 0],
+                        [1, 2, 3, 4],
+                        [10, 10, 10, 10],
+                        [
+                            defaultNodeFlags,
+                            defaultNodeFlags,
+                            defaultNodeFlags,
+                            defaultNodeFlags,
+                        ]
+                    )
+                );
+
                 const graph = new OGraph<
                     TId,
                     TConnectionWeight,
@@ -458,13 +631,9 @@ export const tests: Tests = [
                     [...TConnectionFeatures, ...TConnectionVisual]
                 >(
                     {
-                        features: [
-                            // Feature0, TColor, TLabel, TSize, TEdgeFlags
-                            new Int8Array([10, 11, 12, 13]),
-                            new Uint8Array([0, 0, 0, 0]),
-                            new Uint8Array([1, 2, 3, 4]),
-                            new Uint8Array([10, 10, 10, 10]),
-                            new Uint8Array([defaultNodeFlags, defaultNodeFlags, defaultNodeFlags, defaultNodeFlags]),
+                        features: features as [
+                            ...TNodeFeatures,
+                            ...TNodeVisual
                         ],
                         xCoordinates: new Float32Array([0, 0, 5, 5]),
                         yCoordinates: new Float32Array([0, 10, 10, 0]),
@@ -475,13 +644,14 @@ export const tests: Tests = [
                         to: new Int32Array([2, 3]),
                         value: new Uint8Array([4, 5]),
                         zIndex: new Uint8Array([0, 0]),
-                        features: [
+                        features:
                             // TColor, TLabel, TSize, TEdgeFlags
-                            new Uint8Array([0, 0]),
-                            new Uint8Array([0, 0]),
-                            new Uint8Array([5, 5]),
-                            new Uint8Array([defaultEdgeFlags, defaultEdgeFlags]),
-                        ],
+                            connectionVisualConstructorFromData(
+                                [0, 0],
+                                [0, 0],
+                                [5, 5],
+                                [defaultEdgeFlags, defaultEdgeFlags]
+                            ),
                     }
                 );
 
@@ -511,20 +681,49 @@ export const tests: Tests = [
     //         });
     //     },
     // },
-    // {
-    //     name: "arctic",
-    //     scenario: async (page: Page): Promise<void> => {
-    //         await page.evaluate(() => {
-    //             // const {
-    //             //     data: { arctic },
-    //             //     osigma,
-    //             //     container,
-    //             // } = dependencies;
+    {
+        name: "arctic-small",
+        scenario: async (page: Page): Promise<void> => {
+            await page.evaluate(() => {
+                const {
+                    OSigma,
+                    container,
+                    data: { arcticSmall },
+                } = dependencies;
 
-    //             // new osigma(arctic, container);
-    //         });
-    //     },
-    // },
+                const graph = arcticSmall[0];
+                const valueChoices = arcticSmall[1];
+
+                console.log(graph.nodeCount);
+                console.log(graph.connectionCount);
+                console.log(valueChoices.labelChoices.length);
+
+                new OSigma(graph, container, {}, false, valueChoices);
+            });
+        },
+    },
+    {
+        name: "arctic-big",
+        scenario: async (page: Page): Promise<void> => {
+            await page.evaluate(() => {
+                const {
+                    OSigma,
+                    container,
+                    data: { arcticBig },
+                } = dependencies;
+
+                const graph = arcticBig[0];
+                const valueChoices = arcticBig[1];
+
+                console.log(graph.nodeCount);
+                console.log(graph.connectionCount);
+                console.log(valueChoices.labelChoices.length);
+
+                new OSigma(graph, container, {}, false, valueChoices);
+            });
+        },
+        dimensions: { width: 5400, height: 5800 },
+    },
     // {
     //     name: "camera-state-unzoom-pan",
     //     scenario: async (page: Page): Promise<void> => {

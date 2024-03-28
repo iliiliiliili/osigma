@@ -11,12 +11,12 @@
 import { NodeDisplayData, RenderParams } from "../../../types";
 import { TypedArray } from "../../../core/ograph";
 import { floatColor } from "../../../utils";
-import { decodeColor } from "../../../value-choices";
 import { NodeProgram } from "./common/node";
 import VERTEX_SHADER_SOURCE from "../shaders/node.circle.vert.glsl";
 import FRAGMENT_SHADER_SOURCE from "../shaders/node.circle.frag.glsl";
+import { UncertainWebGL2RenderingContext } from "./common/program";
 
-const { UNSIGNED_BYTE, FLOAT } = WebGLRenderingContext;
+const { UNSIGNED_BYTE, FLOAT } = UncertainWebGL2RenderingContext;
 
 const UNIFORMS = ["u_sizeRatio", "u_correctionRatio", "u_matrix"] as const;
 
@@ -64,29 +64,37 @@ export default class NodeCircleProgram<
     processVisibleItem(i: number, nodeId: number) {
         const array = this.array;
 
-        const color = floatColor(decodeColor(this.graph.nodes.features[this.renderer.nodeColorFeatureId][nodeId]));
+        const color = floatColor(
+            this.renderer.valueChoices.decodeColor(
+                this.graph.nodes.features[this.renderer.nodeColorFeatureId][
+                    nodeId
+                ]
+            )
+        );
 
         array[i++] = this.graph.nodes.xCoordinates[nodeId];
         array[i++] = this.graph.nodes.yCoordinates[nodeId];
-        array[i++] = this.graph.nodes.features[this.renderer.nodeSizeFeatureId][nodeId];
+        array[i++] =
+            this.graph.nodes.features[this.renderer.nodeSizeFeatureId][nodeId];
         array[i++] = color;
         array[i++] = NodeCircleProgram.ANGLE_1;
 
         array[i++] = this.graph.nodes.xCoordinates[nodeId];
         array[i++] = this.graph.nodes.yCoordinates[nodeId];
-        array[i++] = this.graph.nodes.features[this.renderer.nodeSizeFeatureId][nodeId];
+        array[i++] =
+            this.graph.nodes.features[this.renderer.nodeSizeFeatureId][nodeId];
         array[i++] = color;
         array[i++] = NodeCircleProgram.ANGLE_2;
 
         array[i++] = this.graph.nodes.xCoordinates[nodeId];
         array[i++] = this.graph.nodes.yCoordinates[nodeId];
-        array[i++] = this.graph.nodes.features[this.renderer.nodeSizeFeatureId][nodeId];
+        array[i++] =
+            this.graph.nodes.features[this.renderer.nodeSizeFeatureId][nodeId];
         array[i++] = color;
         array[i] = NodeCircleProgram.ANGLE_3;
     }
 
     draw(params: RenderParams): void {
-
         const { u_sizeRatio, u_correctionRatio, u_matrix } =
             this.uniformLocations;
 

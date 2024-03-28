@@ -20,7 +20,8 @@ export type PlainObject<T = any> = { [k: string]: T };
  * T *required*, and the rest optional.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type PartialButFor<T, K extends keyof T> = Pick<T, K> & Partial<Omit<T, K>> & { [others: string]: any };
+export type PartialButFor<T, K extends keyof T> = Pick<T, K> &
+    Partial<Omit<T, K>> & { [others: string]: any };
 
 export interface Coordinates {
     x: number;
@@ -32,7 +33,12 @@ export interface CameraState extends Coordinates {
     ratio: number;
 }
 
-export type MouseInteraction = "click" | "doubleClick" | "rightClick" | "wheel" | "down";
+export type MouseInteraction =
+    | "click"
+    | "doubleClick"
+    | "rightClick"
+    | "wheel"
+    | "down";
 
 export interface MouseCoords extends Coordinates {
     OSigmaDefaultPrevented: boolean;
@@ -70,7 +76,7 @@ export interface NodeDisplayData extends Coordinates, DisplayData {
     highlighted: boolean;
 }
 
-export interface EdgeDisplayData extends DisplayData { }
+export interface EdgeDisplayData extends DisplayData {}
 
 export type CoordinateConversionOverride = {
     cameraState?: CameraState;
@@ -103,13 +109,31 @@ interface ITypedEventEmitter<Events extends EventsMapping> {
     eventNames<Event extends keyof Events>(): Array<Event>;
     setMaxListeners(n: number): this;
     getMaxListeners(): number;
-    emit<Event extends keyof Events>(type: Event, ...args: Parameters<Events[Event]>): boolean;
-    addListener<Event extends keyof Events>(type: Event, listener: Events[Event]): this;
+    emit<Event extends keyof Events>(
+        type: Event,
+        ...args: Parameters<Events[Event]>
+    ): boolean;
+    addListener<Event extends keyof Events>(
+        type: Event,
+        listener: Events[Event]
+    ): this;
     on<Event extends keyof Events>(type: Event, listener: Events[Event]): this;
-    once<Event extends keyof Events>(type: Event, listener: Events[Event]): this;
-    prependListener<Event extends keyof Events>(type: Event, listener: Events[Event]): this;
-    prependOnceListener<Event extends keyof Events>(type: Event, listener: Events[Event]): this;
-    removeListener<Event extends keyof Events>(type: Event, listener: Events[Event]): this;
+    once<Event extends keyof Events>(
+        type: Event,
+        listener: Events[Event]
+    ): this;
+    prependListener<Event extends keyof Events>(
+        type: Event,
+        listener: Events[Event]
+    ): this;
+    prependOnceListener<Event extends keyof Events>(
+        type: Event,
+        listener: Events[Event]
+    ): this;
+    removeListener<Event extends keyof Events>(
+        type: Event,
+        listener: Events[Event]
+    ): this;
     off<Event extends keyof Events>(type: Event, listener: Events[Event]): this;
     removeAllListeners<Event extends keyof Events>(type?: Event): this;
     listeners<Event extends keyof Events>(type: Event): Events[Event][];
@@ -117,7 +141,9 @@ interface ITypedEventEmitter<Events extends EventsMapping> {
     rawListeners<Event extends keyof Events>(type: Event): Events[Event][];
 }
 
-export class TypedEventEmitter<Events extends EventsMapping> extends (EventEmitter as unknown as {
+export class TypedEventEmitter<
+    Events extends EventsMapping
+> extends (EventEmitter as unknown as {
     new <T extends EventsMapping>(): ITypedEventEmitter<T>;
 })<Events> {
     constructor() {
@@ -126,10 +152,106 @@ export class TypedEventEmitter<Events extends EventsMapping> extends (EventEmitt
     }
 }
 
-export type TColor = Uint8Array
-export type TLabel = Uint8Array
-export type TSize = Uint8Array
-export type TNodeFlags = Uint8Array
-export type TEdgeFlags = Uint8Array
-export type TNodeVisual = [TColor, TLabel, TSize, TNodeFlags]
-export type TConnectionVisual = [TColor, TLabel, TSize, TEdgeFlags]
+export type TColor = Uint8Array;
+export type TLabel = Uint32Array;
+export type TSize = Uint8Array;
+export type TNodeFlags = Uint8Array;
+export type TEdgeFlags = Uint8Array;
+export type TNodeVisual = [TColor, TLabel, TSize, TNodeFlags];
+export type TConnectionVisual = [TColor, TLabel, TSize, TEdgeFlags];
+
+export const nodeVisualConstructor = (
+    count: number,
+    defaultColor?: number,
+    defaultLabel?: number,
+    defaultSize?: number,
+    defaultFlags?: number
+): TNodeVisual => {
+    let color = new Uint8Array(count);
+    let label = new Uint32Array(count);
+    let size = new Uint8Array(count);
+    let flags = new Uint8Array(count);
+
+    if (defaultColor != undefined) {
+        color = color.fill(defaultColor);
+    }
+
+    if (defaultLabel != undefined) {
+        label = label.fill(defaultLabel);
+    }
+
+    if (defaultSize != undefined) {
+        size = size.fill(defaultSize);
+    }
+    if (defaultFlags != undefined) {
+        flags = flags.fill(defaultFlags);
+    }
+
+    return [color, label, size, flags];
+};
+
+export const connectionVisualConstructor = (
+    count: number,
+    defaultColor?: number,
+    defaultLabel?: number,
+    defaultSize?: number,
+    defaultFlags?: number
+): TConnectionVisual => {
+    let color = new Uint8Array(count);
+    let label = new Uint32Array(count);
+    let size = new Uint8Array(count);
+    let flags = new Uint8Array(count);
+
+    if (defaultColor != undefined) {
+        color = color.fill(defaultColor);
+    }
+
+    if (defaultLabel != undefined) {
+        label = label.fill(defaultLabel);
+    }
+
+    if (defaultSize != undefined) {
+        size = size.fill(defaultSize);
+    }
+    if (defaultFlags != undefined) {
+        flags = flags.fill(defaultFlags);
+    }
+
+    return [color, label, size, flags];
+};
+
+export const nodeVisualConstructorFromData = (
+    color: number[],
+    label: number[],
+    size: number[],
+    flags: number[],
+): TNodeVisual => {
+    const colorArray = new Uint8Array(color);
+    const labelArray = new Uint32Array(label);
+    const sizeArray = new Uint8Array(size);
+    const flagsArray = new Uint8Array(flags);
+    return [
+        colorArray,
+        labelArray,
+        sizeArray,
+        flagsArray,
+    ];
+};
+
+export const connectionVisualConstructorFromData = (
+    color: number[],
+    label: number[],
+    size: number[],
+    flags: number[],
+): TConnectionVisual => {
+    const colorArray = new Uint8Array(color);
+    const labelArray = new Uint32Array(label);
+    const sizeArray = new Uint8Array(size);
+    const flagsArray = new Uint8Array(flags);
+    return [
+        colorArray,
+        labelArray,
+        sizeArray,
+        flagsArray,
+    ];
+};

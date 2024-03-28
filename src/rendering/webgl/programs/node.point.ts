@@ -10,7 +10,6 @@
 import { NodeDisplayData, RenderParams } from "../../../types";
 import { TypedArray } from "../../../core/ograph";
 import { floatColor } from "../../../utils";
-import { decodeColor } from "../../../value-choices";
 import { NodeProgram } from "./common/node";
 import { UncertainWebGL2RenderingContext } from "./common/program";
 import VERTEX_SHADER_SOURCE from "../shaders/node.point.vert.glsl";
@@ -61,8 +60,15 @@ export default class NodePointProgram<
 
         array[i++] = this.graph.nodes.xCoordinates[nodeId];
         array[i++] = this.graph.nodes.yCoordinates[nodeId];
-        array[i++] = this.graph.nodes.features[this.renderer.nodeSizeFeatureId][nodeId];
-        array[i] = floatColor(decodeColor(this.graph.nodes.features[this.renderer.nodeColorFeatureId][nodeId]));
+        array[i++] =
+            this.graph.nodes.features[this.renderer.nodeSizeFeatureId][nodeId];
+        array[i] = floatColor(
+            this.renderer.valueChoices.decodeColor(
+                this.graph.nodes.features[this.renderer.nodeColorFeatureId][
+                    nodeId
+                ]
+            )
+        );
     }
 
     draw(params: RenderParams): void {

@@ -8,12 +8,12 @@
 import { NodeDisplayData, EdgeDisplayData, RenderParams } from "../../../types";
 import { TypedArray } from "../../../core/ograph";
 import { floatColor } from "../../../utils";
-import { decodeColor } from "../../../value-choices";
 import { EdgeProgram } from "./common/edge";
 import VERTEX_SHADER_SOURCE from "../shaders/edge.arrowHead.vert.glsl";
 import FRAGMENT_SHADER_SOURCE from "../shaders/edge.arrowHead.frag.glsl";
+import { UncertainWebGL2RenderingContext } from "./common/program";
 
-const { UNSIGNED_BYTE, FLOAT } = WebGLRenderingContext;
+const { UNSIGNED_BYTE, FLOAT } = UncertainWebGL2RenderingContext;
 
 const UNIFORMS = ["u_matrix", "u_sizeRatio", "u_correctionRatio"] as const;
 
@@ -59,7 +59,7 @@ export default class EdgeArrowHeadProgram<
         const fromId = this.graph.connections.from[edgeId];
         const toId = this.graph.connections.to[edgeId];
         const color = floatColor(
-            decodeColor(
+            this.renderer.valueChoices.decodeColor(
                 this.graph.connections.features[
                     this.renderer.connectionColorFeatureId
                 ][edgeId]

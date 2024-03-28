@@ -8,12 +8,12 @@
 import { NodeDisplayData, EdgeDisplayData, RenderParams } from "../../../types";
 import { TypedArray } from "../../../core/ograph";
 import { floatColor } from "../../../utils";
-import { decodeColor } from "../../../value-choices";
 import { EdgeProgram } from "./common/edge";
 import VERTEX_SHADER_SOURCE from "../shaders/edge.triangle.vert.glsl";
 import FRAGMENT_SHADER_SOURCE from "../shaders/edge.triangle.frag.glsl";
+import { UncertainWebGL2RenderingContext } from "./common/program";
 
-const { UNSIGNED_BYTE, FLOAT } = WebGLRenderingContext;
+const { UNSIGNED_BYTE, FLOAT } = UncertainWebGL2RenderingContext;
 
 const UNIFORMS = ["u_matrix", "u_sizeRatio", "u_correctionRatio"] as const;
 
@@ -54,18 +54,20 @@ export default class EdgeTriangleProgram<
     }
 
     processVisibleItem(i: number, edgeId: number) {
-
         const fromId = this.graph.connections.from[edgeId];
         const toId = this.graph.connections.to[edgeId];
         const color = floatColor(
-            decodeColor(
+            this.renderer.valueChoices.decodeColor(
                 this.graph.connections.features[
                     this.renderer.connectionColorFeatureId
                 ][edgeId]
             )
         );
 
-        const thickness = this.graph.connections.features[this.renderer.connectionFlagsFeatureId][edgeId];
+        const thickness =
+            this.graph.connections.features[
+                this.renderer.connectionFlagsFeatureId
+            ][edgeId];
         const x1 = this.graph.nodes.xCoordinates[fromId];
         const y1 = this.graph.nodes.yCoordinates[fromId];
         const x2 = this.graph.nodes.xCoordinates[toId];
@@ -109,7 +111,6 @@ export default class EdgeTriangleProgram<
     }
 
     draw(params: RenderParams): void {
-
         const { u_matrix, u_sizeRatio, u_correctionRatio } =
             this.uniformLocations;
 

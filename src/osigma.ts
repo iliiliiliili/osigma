@@ -47,7 +47,7 @@ import {
     doEdgeCollideWithPoint,
     isPixelColored,
 } from "./utils/edge-collisions";
-import { decodeLabel, decodeColor } from "./value-choices";
+import { ValueChoices } from "./value-choices";
 
 /**
  * Constants.
@@ -234,6 +234,7 @@ export default class OSigma<
 
     private camera: Camera;
 
+    public valueChoices: ValueChoices;
     private shouldDefaultGraphVisuals: boolean;
 
     public nodeColorFeatureId: number;
@@ -266,21 +267,24 @@ export default class OSigma<
                 TConnectionFeatures
             >
         > = {},
-        shouldDefaultGraphVisuals = true
+        shouldDefaultGraphVisuals = true,
+        valueChoices: ValueChoices | null = null,
     ) {
         super();
 
         this.shouldDefaultGraphVisuals = shouldDefaultGraphVisuals;
 
-        this.nodeColorFeatureId = graph.nodes.features.length - 4;
-        this.nodeLabelFeatureId = graph.nodes.features.length - 3;
-        this.nodeSizeFeatureId = graph.nodes.features.length - 2;
-        this.nodeFlagsFeatureId = graph.nodes.features.length - 1;
+        this.nodeColorFeatureId = OSigma.getNodeColorFeatureId(graph.nodes.features.length);
+        this.nodeLabelFeatureId = OSigma.getNodeLabelFeatureId(graph.nodes.features.length);
+        this.nodeSizeFeatureId = OSigma.getNodeSizeFeatureId(graph.nodes.features.length);
+        this.nodeFlagsFeatureId = OSigma.getNodeFlagsFeatureId(graph.nodes.features.length);
 
-        this.connectionColorFeatureId = graph.connections.features.length - 4;
-        this.connectionLabelFeatureId = graph.connections.features.length - 3;
-        this.connectionSizeFeatureId = graph.connections.features.length - 2;
-        this.connectionFlagsFeatureId = graph.connections.features.length - 1;
+        this.connectionColorFeatureId = OSigma.getConnectionColorFeatureId(graph.connections.features.length);
+        this.connectionLabelFeatureId = OSigma.getConnectionLabelFeatureId(graph.connections.features.length);
+        this.connectionSizeFeatureId = OSigma.getConnectionSizeFeatureId(graph.connections.features.length);
+        this.connectionFlagsFeatureId = OSigma.getConnectionFlagsFeatureId(graph.connections.features.length);
+
+        this.valueChoices = valueChoices ?? new ValueChoices();
 
         // Resolving settings
         this.settings = resolveSettings(settings);
@@ -1104,7 +1108,9 @@ export default class OSigma<
             // if (settings.edgeReducer) attr = settings.edgeReducer(edge, attr);
 
             const [hidden, forceLabel, edgeType] = OSigma.decodeEdgeFlags(
-                this.graph.connections.features[this.connectionFlagsFeatureId][i]
+                this.graph.connections.features[this.connectionFlagsFeatureId][
+                    i
+                ]
             );
 
             edgesPerPrograms[edgeType] = (edgesPerPrograms[edgeType] || 0) + 1;
@@ -1241,7 +1247,7 @@ export default class OSigma<
 
             this.settings.labelRenderer(
                 context,
-                decodeLabel(
+                this.valueChoices.decodeLabel(
                     this.graph.nodes.features[this.nodeLabelFeatureId][nodeId]
                 ),
                 x,
@@ -1349,7 +1355,7 @@ export default class OSigma<
 
             this.settings.hoverRenderer(
                 context,
-                decodeLabel(
+                this.valueChoices.decodeLabel(
                     this.graph.nodes.features[this.nodeLabelFeatureId][nodeId]
                 ),
                 x,
@@ -2391,7 +2397,9 @@ export default class OSigma<
         return result;
     }
 
-    public static decodeEdgeFlags(edgeFlags: number): [boolean, boolean, number] {
+    public static decodeEdgeFlags(
+        edgeFlags: number
+    ): [boolean, boolean, number] {
         const hidden = (edgeFlags & 0b1) == 1;
         const forceLabel = ((edgeFlags >> 1) & 0b1) == 1;
         const edgeType = (edgeFlags >> 2) & 0b111;
@@ -2531,5 +2539,31 @@ export default class OSigma<
                 2) &
             0b111
         );
+    }
+
+    public static getNodeColorFeatureId(featuresCount: number) {
+        return featuresCount - 4;
+    }
+    public static getNodeLabelFeatureId(featuresCount: number) {
+        return featuresCount - 3;
+    }
+    public static getNodeSizeFeatureId(featuresCount: number) {
+        return featuresCount - 2;
+    }
+    public static getNodeFlagsFeatureId(featuresCount: number) {
+        return featuresCount - 1;
+    }
+
+    public static getConnectionColorFeatureId(featuresCount: number) {
+        return featuresCount - 4;
+    }
+    public static getConnectionLabelFeatureId(featuresCount: number) {
+        return featuresCount - 3;
+    }
+    public static getConnectionSizeFeatureId(featuresCount: number) {
+        return featuresCount - 2;
+    }
+    public static getConnectionFlagsFeatureId(featuresCount: number) {
+        return featuresCount - 1;
     }
 }
