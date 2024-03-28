@@ -22,6 +22,7 @@ type TConnectionFeatures = [];
 type TestDependencies = {
     OSigma: typeof OSigma;
     OGraph: typeof OGraph;
+    ValueChoices: typeof ValueChoices;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     programs: { [key: string]: any };
     data: {
@@ -37,6 +38,28 @@ type TestDependencies = {
             ValueChoices
         ];
         arcticSmall: [
+            OGraph<
+                TId,
+                TConnectionWeight,
+                TCoordinates,
+                TZIndex,
+                [...TNodeFeatures, ...TNodeVisual],
+                [...TConnectionFeatures, ...TConnectionVisual]
+            >,
+            ValueChoices
+        ];
+        lesBig: [
+            OGraph<
+                TId,
+                TConnectionWeight,
+                TCoordinates,
+                TZIndex,
+                [...TNodeFeatures, ...TNodeVisual],
+                [...TConnectionFeatures, ...TConnectionVisual]
+            >,
+            ValueChoices
+        ];
+        lesSmall: [
             OGraph<
                 TId,
                 TConnectionWeight,
@@ -667,20 +690,41 @@ export const tests: Tests = [
             });
         },
     },
-    // {
-    //     name: "les-miserables",
-    //     scenario: async (page: Page): Promise<void> => {
-    //         await page.evaluate(() => {
-    //             // const {
-    //             //     data: { lesMiserables },
-    //             //     osigma,
-    //             //     container,
-    //             // } = dependencies;
+    {
+        name: "les-miserables-small",
+        scenario: async (page: Page): Promise<void> => {
+            await page.evaluate(() => {
+                const {
+                    OSigma,
+                    container,
+                    data: { lesSmall },
+                } = dependencies;
 
-    //             // new osigma(lesMiserables, container);
-    //         });
-    //     },
-    // },
+                const graph = lesSmall[0];
+                const valueChoices = lesSmall[1];
+
+                new OSigma(graph, container, {}, false, valueChoices);
+            });
+        },
+    },
+    {
+        name: "les-miserables-big",
+        scenario: async (page: Page): Promise<void> => {
+            await page.evaluate(() => {
+                const {
+                    OSigma,
+                    container,
+                    data: { lesBig },
+                } = dependencies;
+
+                const graph = lesBig[0];
+                const valueChoices = lesBig[1];
+
+                new OSigma(graph, container, {}, false, valueChoices);
+            });
+        },
+        dimensions: { width: 5400, height: 5800 },
+    },
     {
         name: "arctic-small",
         scenario: async (page: Page): Promise<void> => {
@@ -693,10 +737,6 @@ export const tests: Tests = [
 
                 const graph = arcticSmall[0];
                 const valueChoices = arcticSmall[1];
-
-                console.log(graph.nodeCount);
-                console.log(graph.connectionCount);
-                console.log(valueChoices.labelChoices.length);
 
                 new OSigma(graph, container, {}, false, valueChoices);
             });
@@ -715,217 +755,238 @@ export const tests: Tests = [
                 const graph = arcticBig[0];
                 const valueChoices = arcticBig[1];
 
-                console.log(graph.nodeCount);
-                console.log(graph.connectionCount);
-                console.log(valueChoices.labelChoices.length);
-
                 new OSigma(graph, container, {}, false, valueChoices);
             });
         },
         dimensions: { width: 5400, height: 5800 },
     },
-    // {
-    //     name: "camera-state-unzoom-pan",
-    //     scenario: async (page: Page): Promise<void> => {
-    //         await page.evaluate(() => {
-    //             // const {
-    //             //     data: { lesMiserables },
-    //             //     osigma,
-    //             //     container,
-    //             // } = dependencies;
+    {
+        name: "camera-state-unzoom-pan",
+        scenario: async (page: Page): Promise<void> => {
+            await page.evaluate(() => {
+                const {
+                    OSigma,
+                    container,
+                    data: { lesSmall },
+                } = dependencies;
 
-    //             // const renderer = new osigma(lesMiserables, container);
-    //             // renderer.getCamera().setState({ ratio: 3, x: 0.8, y: 0.7 });
-    //         });
-    //     },
-    // },
-    // {
-    //     name: "camera-state-zoom-pan",
-    //     scenario: async (page: Page): Promise<void> => {
-    //         await page.evaluate(() => {
-    //             // const {
-    //             //     data: { lesMiserables },
-    //             //     osigma,
-    //             //     container,
-    //             // } = dependencies;
+                const graph = lesSmall[0];
+                const valueChoices = lesSmall[1];
 
-    //             // const renderer = new osigma(lesMiserables, container);
-    //             // renderer.getCamera().setState({ ratio: 1 / 3, x: 0.8, y: 0.7 });
-    //         });
-    //     },
-    // },
-    // {
-    //     name: "custom-zoomToSizeRatioFunction",
-    //     scenario: async (page: Page): Promise<void> => {
-    //         await page.evaluate(() => {
-    //             // const {
-    //             //     data: { lesMiserables },
-    //             //     osigma,
-    //             //     container,
-    //             // } = dependencies;
+                const renderer = new OSigma(
+                    graph,
+                    container,
+                    {},
+                    false,
+                    valueChoices
+                );
 
-    //             // const renderer = new osigma(lesMiserables, container, {
-    //             //     zoomToSizeRatioFunction: (x) => x,
-    //             // });
-    //             // renderer.getCamera().setState({ ratio: 3, x: 0.8, y: 0.7 });
-    //         });
-    //     },
-    // },
-    // {
-    //     name: "camera-state-rotation",
-    //     scenario: async (page: Page): Promise<void> => {
-    //         await page.evaluate(() => {
-    //             // const {
-    //             //     data: { arctic },
-    //             //     osigma,
-    //             //     container,
-    //             // } = dependencies;
+                renderer.getCamera().setState({ ratio: 3, x: 0.8, y: 0.7 });
 
-    //             // const renderer = new osigma(arctic, container);
-    //             // renderer.getCamera().setState({ angle: 30 });
-    //         });
-    //     },
-    // },
-    // {
-    //     name: "reducers",
-    //     scenario: async (page: Page): Promise<void> => {
-    //         await page.evaluate(() => {
-    //             // const {
-    //             //     data: { lesMiserables },
-    //             //     osigma,
-    //             //     container,
-    //             // } = dependencies;
+            });
+        },
+    },
+    {
+        name: "camera-state-zoom-pan",
+        scenario: async (page: Page): Promise<void> => {
+            await page.evaluate(() => {
+                const {
+                    OSigma,
+                    container,
+                    data: { lesSmall },
+                } = dependencies;
 
-    //             // const nodeReducer = (
-    //             //     key: string,
-    //             //     attr: Partial<NodeDisplayData>
-    //             // ) => {
-    //             //     const data = attr as NodeDisplayData;
-    //             //     return Object.assign({}, data, {
-    //             //         color:
-    //             //             (data.label || "").charCodeAt(0) % 2 === 0
-    //             //                 ? "#1E90FF"
-    //             //                 : "#FF0000",
-    //             //     });
-    //             // };
+                const graph = lesSmall[0];
+                const valueChoices = lesSmall[1];
 
-    //             // const edgeReducer = (
-    //             //     key: string,
-    //             //     attr: Partial<EdgeDisplayData>
-    //             // ) => {
-    //             //     const data = attr as EdgeDisplayData;
-    //             //     return Object.assign({}, data, {
-    //             //         color: +key % 2 === 0 ? "#FFFF00" : "#008000",
-    //             //     });
-    //             // };
+                const renderer = new OSigma(
+                    graph,
+                    container,
+                    {},
+                    false,
+                    valueChoices
+                );
 
-    //             // new osigma(lesMiserables, container, {
-    //             //     nodeReducer,
-    //             //     edgeReducer,
-    //             // });
-    //         });
-    //     },
-    // },
-    // {
-    //   name: "les-miserables-mouse-wheel",
-    //   waitFor: 2000,
-    //   scenario: async (page: Page): Promise<void> => {
-    //     await page.evaluate(() => {
-    //       const {
-    //         data: { lesMiserables },
-    //         osigma,
-    //         container,
-    //       } = dependencies;
+                renderer.getCamera().setState({ ratio: 1 / 3, x: 0.8, y: 0.7 });
 
-    //       new osigma(lesMiserables, container);
+            });
+        },
+    },
+    {
+        name: "custom-zoomToSizeRatioFunction",
+        scenario: async (page: Page): Promise<void> => {
+            await page.evaluate(() => {
+                const {
+                    OSigma,
+                    container,
+                    data: { lesSmall },
+                } = dependencies;
 
-    //       const element = document.getElementsByClassName("osigma-mouse")[0];
-    //       const cEvent: Event & { clientX?: number; clientY?: number; deltaY?: number } = new Event("wheel");
-    //       cEvent.clientX = 0;
-    //       cEvent.clientY = 0;
-    //       cEvent.deltaY = -100;
-    //       element.dispatchEvent(cEvent);
-    //     });
-    //   },
-    // },
-    // {
-    //     name: "node-edge-state",
-    //     waitFor: 2000,
-    //     scenario: async (page: Page): Promise<void> => {
-    //         await page.evaluate(() => {
-    //             // const { Graph, osigma, container } = dependencies;
+                const graph = lesSmall[0];
+                const valueChoices = lesSmall[1];
 
-    //             // const graph = new Graph({ type: "directed" });
+                const renderer = new OSigma(
+                    graph,
+                    container,
+                    {
+                        zoomToSizeRatioFunction: (x) => x,
+                    },
+                    false,
+                    valueChoices
+                );
 
-    //             // graph.addNode("Alice", {
-    //             //     label: "Alice",
-    //             //     x: -2,
-    //             //     y: 1,
-    //             //     color: "#FF0",
-    //             //     size: 10,
-    //             // });
+                renderer.getCamera().setState({ ratio: 3, x: 0.8, y: 0.7 });
 
-    //             // graph.addNode("Bob", {
-    //             //     label: "Bob",
-    //             //     x: 1,
-    //             //     y: 2,
-    //             //     color: "#00F",
-    //             //     size: 5,
-    //             // });
+            });
+        },
+    },
+    {
+        name: "camera-state-rotation",
+        scenario: async (page: Page): Promise<void> => {
+            await page.evaluate(() => {
+                const {
+                    OSigma,
+                    container,
+                    data: { arcticSmall },
+                } = dependencies;
 
-    //             // graph.addNode("Charles", {
-    //             //     label: "Charles",
-    //             //     x: 2,
-    //             //     y: -1,
-    //             //     color: "#00F",
-    //             //     size: 5,
-    //             // });
+                const graph = arcticSmall[0];
+                const valueChoices = arcticSmall[1];
 
-    //             // graph.addNode("Deborah", {
-    //             //     label: "Deborah",
-    //             //     x: -1,
-    //             //     y: -2,
-    //             //     color: "#00F",
-    //             //     size: 5,
-    //             // });
+                const renderer = new OSigma(
+                    graph,
+                    container,
+                    {},
+                    false,
+                    valueChoices
+                );
 
-    //             // graph.addEdge("Alice", "Bob", {
-    //             //     label: "likes to play with",
-    //             //     size: 1,
-    //             // });
+                renderer.getCamera().setState({ angle: 30 });
 
-    //             // graph.addEdge("Bob", "Charles", {
-    //             //     label: "likes to be with",
-    //             //     color: "#fc0",
-    //             //     size: 2,
-    //             // });
+            });
+        },
+    },
+    {
+        name: "les-miserables-mouse-wheel",
+        waitFor: 5000,
+        scenario: async (page: Page): Promise<void> => {
+            await page.evaluate(() => {
+                const {
+                    OSigma,
+                    container,
+                    data: { lesSmall },
+                } = dependencies;
 
-    //             // graph.addEdge("Charles", "Deborah", {
-    //             //     label: "likes to talk with",
-    //             //     color: "#CCC",
-    //             //     size: 3,
-    //             // });
+                const graph = lesSmall[0];
+                const valueChoices = lesSmall[1];
 
-    //             // graph.addEdge("Deborah", "Alice", {
-    //             //     label: "likes to talk with",
-    //             //     color: "#000",
-    //             //     size: 20,
-    //             // });
+                new OSigma(
+                    graph,
+                    container,
+                    {},
+                    false,
+                    valueChoices
+                );
 
-    //             // new osigma(graph, container, {
-    //             //     defaultEdgeType: "arrow",
-    //             //     defaultEdgeColor: "#888",
-    //             //     renderEdgeLabels: true,
-    //             // });
+                const element = document.getElementsByClassName("osigma-mouse")[0];
+                const cEvent: Event & { clientX?: number; clientY?: number; deltaY?: number } = new Event("wheel");
+                cEvent.clientX = 0;
+                cEvent.clientY = 0;
+                cEvent.deltaY = -100;
+                element.dispatchEvent(cEvent);
 
-    //             // graph.setNodeAttribute("Alice", "highlighted", true);
-    //             // graph.setNodeAttribute("Bob", "size", 50);
-    //             // graph.setNodeAttribute("Bob", "color", "#FF0000");
-    //             // graph.setNodeAttribute("Deborah", "hidden", true);
-    //             // graph.setEdgeAttribute("Alice", "Bob", "hidden", true);
-    //         });
-    //     },
-    // },
+            });
+        },
+    },
+    {
+        name: "node-edge-state",
+        waitFor: 2000,
+        scenario: async (page: Page): Promise<void> => {
+            await page.evaluate(() => {
+
+                const {
+                    OSigma,
+                    OGraph,
+                    ValueChoices,
+                    container,
+                    nodeVisualConstructorFromData,
+                    connectionVisualConstructorFromData,
+                } = dependencies;
+
+                const defaultNodeFlags = OSigma.encodeNodeFlags(
+                    false,
+                    false,
+                    false,
+                    0
+                );
+
+                const defaultEdgeFlags = OSigma.encodeEdgeFlags(
+                    false,
+                    false,
+                    1
+                );
+
+                // Feature0, TColor, TLabel, TSize, TEdgeFlags
+                const features: TypedArray[] = [
+                    new Int8Array([10, 11, 12, 13]),
+                ];
+
+                const labels = ["", "Alice", "Bob", "Charles", "Deborah"];
+
+                // eslint-disable-next-line prefer-spread
+                features.push.apply(
+                    features,
+                    nodeVisualConstructorFromData(
+                        [11, 112, 213, 64],
+                        [1, 2, 3, 4],
+                        [10, 50, 5, 5],
+                        [
+                            OSigma.encodeNodeFlags(false, true, false, 0),
+                            defaultNodeFlags,
+                            defaultNodeFlags,
+                            OSigma.encodeNodeFlags(true, false, false, 0),
+                        ]
+                    )
+                );
+
+                const graph = new OGraph<
+                    TId,
+                    TConnectionWeight,
+                    TCoordinates,
+                    TZIndex,
+                    [...TNodeFeatures, ...TNodeVisual],
+                    [...TConnectionFeatures, ...TConnectionVisual]
+                >(
+                    {
+                        features: features as [
+                            ...TNodeFeatures,
+                            ...TNodeVisual
+                        ],
+                        xCoordinates: new Float32Array([-2, 1, 2, -1]),
+                        yCoordinates: new Float32Array([1, 2, -1, -2]),
+                        zIndex: new Uint8Array([0, 0, 0, 0]),
+                    },
+                    {
+                        from: new Int32Array([0, 1, 2, 3]),
+                        to: new Int32Array([1, 2, 3, 0]),
+                        value: new Uint8Array([4, 5, 1, 2]),
+                        zIndex: new Uint8Array([0, 0, 0, 0]),
+                        features:
+                            // TColor, TLabel, TSize, TEdgeFlags
+                            connectionVisualConstructorFromData(
+                                [129, 129, 129, 129],
+                                [0, 0, 0, 0],
+                                [1, 2, 3, 20],
+                                [OSigma.encodeEdgeFlags(true, false, 1), defaultEdgeFlags, defaultEdgeFlags, defaultEdgeFlags]
+                            ),
+                    }
+                );
+
+                new OSigma(graph, container, {}, false, new ValueChoices(labels));
+
+            });
+        },
+    },
     // {
     //     name: "programs",
     //     scenario: async (page: Page): Promise<void> => {

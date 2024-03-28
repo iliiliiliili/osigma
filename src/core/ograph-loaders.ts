@@ -21,7 +21,7 @@ export type JsonVerboseGraph = {
         };
     }[];
     edges: {
-        [key: string]: string | number | boolean;
+        [key: string]: string | number | boolean | object;
     }[];
 };
 
@@ -257,7 +257,7 @@ export function jsonVerboseToVisualOGraph<
             const value = parseConnectionFeatureField
                 ? parseConnectionFeatureField(
                       connectionFeatureId,
-                      connection[connectionFeatureFields[connectionFeatureId]]
+                      connection[connectionFeatureFields[connectionFeatureId]] as string | number | boolean
                   )
                 : (connection[
                       connectionFeatureFields[connectionFeatureId]

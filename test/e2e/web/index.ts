@@ -22,7 +22,7 @@ import {
     nodeVisualConstructorFromData,
     connectionVisualConstructorFromData,
 } from "../../../src/types";
-import { maxChoicesPerColor } from "../../../src/value-choices";
+import { ValueChoices, maxChoicesPerColor } from "../../../src/value-choices";
 
 // Useful data
 import ARCTIC from "./resources/arctic.json";
@@ -35,7 +35,7 @@ type TZIndex = Uint8Array;
 type TNodeFeatures = [Int8Array];
 type TConnectionFeatures = [];
 
-const loadArctic = (json: JsonVerboseGraph, isBig: boolean) => {
+const loadArcticOrLesMiserables = (json: JsonVerboseGraph, isBig: boolean) => {
     const mapColorChannel = (x: number, i: number) =>
         Math.floor((x * maxChoicesPerColor) / 256) * Math.pow(maxChoicesPerColor, 2 - i);
 
@@ -86,8 +86,11 @@ const loadArctic = (json: JsonVerboseGraph, isBig: boolean) => {
     });
 };
 
-const arcticSmall = loadArctic(ARCTIC as JsonVerboseGraph, false);
-const arcticBig = loadArctic(ARCTIC as JsonVerboseGraph, true);
+
+const arcticSmall = loadArcticOrLesMiserables(ARCTIC as JsonVerboseGraph, false);
+const arcticBig = loadArcticOrLesMiserables(ARCTIC as JsonVerboseGraph, true);
+const lesSmall = loadArcticOrLesMiserables(LES_MISERABLES as JsonVerboseGraph, false);
+const lesBig = loadArcticOrLesMiserables(LES_MISERABLES as JsonVerboseGraph, true);
 // const lesMiserables = Graph.from(LES_MISERABLES as SerializedGraph);
 const container = document.getElementById("container") as HTMLElement;
 
@@ -103,7 +106,8 @@ globalize({
     dependencies: {
         OGraph,
         OSigma,
-        data: { arcticSmall, arcticBig },
+        ValueChoices,
+        data: { arcticSmall, arcticBig, lesSmall, lesBig },
         nodeVisualConstructorFromData,
         connectionVisualConstructorFromData,
         programs: {

@@ -76,7 +76,7 @@ export default class EdgeArrowHeadProgram<
         const y2 = this.graph.nodes.yCoordinates[toId];
 
         const radius =
-            this.graph.nodes.features[this.renderer.nodeSizeFeatureId][edgeId];
+            this.graph.nodes.features[this.renderer.nodeSizeFeatureId][toId];
 
         // Computing normals
         const dx = x2 - x1;

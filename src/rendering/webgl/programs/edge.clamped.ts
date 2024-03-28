@@ -76,7 +76,7 @@ export default class EdgeClampedProgram<
         const dy = y2 - y1;
 
         const radius =
-            this.graph.nodes.features[this.renderer.nodeSizeFeatureId][edgeId];
+            this.graph.nodes.features[this.renderer.nodeSizeFeatureId][toId];
 
         let len = dx * dx + dy * dy;
         let n1 = 0;
