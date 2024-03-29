@@ -1,3 +1,4 @@
+![tests](https://github.com/iliiliiliili/osigma/actions/workflows/node.js.yml/badge.svg)
 
 # osigma
 
