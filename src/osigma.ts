@@ -5,7 +5,12 @@
  */
 import extend from "./core/extend";
 
-import { OGraph, TypedArray } from "./core/ograph";
+import {
+    OGraph,
+    TypedArray,
+    OSpatialNodes,
+    OSpatialConnections,
+} from "./core/ograph";
 import Camera from "./core/camera";
 import MouseCaptor from "./core/captors/mouse";
 import QuadTree from "./core/quadtree";
@@ -24,6 +29,8 @@ import {
     MouseInteraction,
     TNodeVisual,
     TConnectionVisual,
+    nodeVisualConstructor,
+    connectionVisualConstructor,
 } from "./types";
 import {
     createElement,
@@ -268,21 +275,37 @@ export default class OSigma<
             >
         > = {},
         shouldDefaultGraphVisuals = true,
-        valueChoices: ValueChoices | null = null,
+        valueChoices: ValueChoices | null = null
     ) {
         super();
 
         this.shouldDefaultGraphVisuals = shouldDefaultGraphVisuals;
 
-        this.nodeColorFeatureId = OSigma.getNodeColorFeatureId(graph.nodes.features.length);
-        this.nodeLabelFeatureId = OSigma.getNodeLabelFeatureId(graph.nodes.features.length);
-        this.nodeSizeFeatureId = OSigma.getNodeSizeFeatureId(graph.nodes.features.length);
-        this.nodeFlagsFeatureId = OSigma.getNodeFlagsFeatureId(graph.nodes.features.length);
+        this.nodeColorFeatureId = OSigma.getNodeColorFeatureId(
+            graph.nodes.features.length
+        );
+        this.nodeLabelFeatureId = OSigma.getNodeLabelFeatureId(
+            graph.nodes.features.length
+        );
+        this.nodeSizeFeatureId = OSigma.getNodeSizeFeatureId(
+            graph.nodes.features.length
+        );
+        this.nodeFlagsFeatureId = OSigma.getNodeFlagsFeatureId(
+            graph.nodes.features.length
+        );
 
-        this.connectionColorFeatureId = OSigma.getConnectionColorFeatureId(graph.connections.features.length);
-        this.connectionLabelFeatureId = OSigma.getConnectionLabelFeatureId(graph.connections.features.length);
-        this.connectionSizeFeatureId = OSigma.getConnectionSizeFeatureId(graph.connections.features.length);
-        this.connectionFlagsFeatureId = OSigma.getConnectionFlagsFeatureId(graph.connections.features.length);
+        this.connectionColorFeatureId = OSigma.getConnectionColorFeatureId(
+            graph.connections.features.length
+        );
+        this.connectionLabelFeatureId = OSigma.getConnectionLabelFeatureId(
+            graph.connections.features.length
+        );
+        this.connectionSizeFeatureId = OSigma.getConnectionSizeFeatureId(
+            graph.connections.features.length
+        );
+        this.connectionFlagsFeatureId = OSigma.getConnectionFlagsFeatureId(
+            graph.connections.features.length
+        );
 
         this.valueChoices = valueChoices ?? new ValueChoices();
 
@@ -2565,5 +2588,63 @@ export default class OSigma<
     }
     public static getConnectionFlagsFeatureId(featuresCount: number) {
         return featuresCount - 1;
+    }
+
+    public static makeVisualGraph<
+        TId extends TypedArray,
+        TConnectionWeight extends TypedArray,
+        TCoordinates extends TypedArray,
+        TZIndex extends TypedArray,
+        TNodeFeatures extends TypedArray[],
+        TConnectionFeatures extends TypedArray[]
+    >(
+        spatialGraph: OGraph<
+            TId,
+            TConnectionWeight,
+            TCoordinates,
+            TZIndex,
+            TNodeFeatures,
+            TConnectionFeatures
+        >
+    ) {
+        const nodes: OSpatialNodes<
+            TCoordinates,
+            TZIndex,
+            [...TNodeFeatures, ...TNodeVisual]
+        > = {
+            xCoordinates: spatialGraph.nodes.xCoordinates,
+            yCoordinates: spatialGraph.nodes.yCoordinates,
+            zIndex: spatialGraph.nodes.zIndex,
+            features: [
+                ...spatialGraph.nodes.features,
+                ...nodeVisualConstructor(spatialGraph.nodeCount),
+            ],
+        };
+        const connections: OSpatialConnections<
+            TId,
+            TConnectionWeight,
+            TZIndex,
+            [...TConnectionFeatures, ...TConnectionVisual]
+        > = {
+            from: spatialGraph.connections.from,
+            to: spatialGraph.connections.to,
+            value: spatialGraph.connections.value,
+            zIndex: spatialGraph.connections.zIndex,
+            features: [
+                ...spatialGraph.connections.features,
+                ...connectionVisualConstructor(spatialGraph.connectionCount),
+            ]
+        };
+
+        const visualGraph = new OGraph<
+            TId,
+            TConnectionWeight,
+            TCoordinates,
+            TZIndex,
+            [...TNodeFeatures, ...TNodeVisual],
+            [...TConnectionFeatures, ...TConnectionVisual]
+        >(nodes, connections);
+
+        return visualGraph;
     }
 }

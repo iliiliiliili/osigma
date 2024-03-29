@@ -264,6 +264,48 @@ export const tests: Tests = [
         },
     },
     {
+        name: "visual-from-spatial",
+        scenario: async (page: Page): Promise<void> => {
+            await page.evaluate(() => {
+                const {
+                    OSigma,
+                    OGraph,
+                    container,
+                } = dependencies;
+
+                const graph = new OGraph<
+                    TId,
+                    TConnectionWeight,
+                    TCoordinates,
+                    TZIndex,
+                    TNodeFeatures,
+                    TConnectionFeatures
+                >(
+                    {
+                        features: [new Int8Array([10, 11, 12, 13])],
+                        xCoordinates: new Float32Array([0, 0, 10, 10]),
+                        yCoordinates: new Float32Array([0, 10, 10, 0]),
+                        zIndex: new Uint8Array([0, 0, 0, 0]),
+                    },
+                    {
+                        from: new Int32Array([0, 1, 2, 3, 0, 1]),
+                        to: new Int32Array([1, 2, 3, 0, 2, 3]),
+                        value: new Uint8Array([0, 2, 1, 2, 4, 5]),
+                        zIndex: new Uint8Array([0, 0, 0, 0, 0, 0]),
+                        features: [],
+                    }
+                );
+
+                new OSigma(
+                    OSigma.makeVisualGraph(graph),
+                    container,
+                    {},
+                    true,
+                );
+            });
+        },
+    },
+    {
         name: "aspect-ratio-vertical-graph-horizontal-container",
         scenario: async (page: Page): Promise<void> => {
             await page.evaluate(() => {

@@ -240,5 +240,4 @@ export interface OSpatialNodes<
     xCoordinates: TCoordinates;
     yCoordinates: TCoordinates;
     zIndex: TZIndex,
-    features: TFeatures;
 }
