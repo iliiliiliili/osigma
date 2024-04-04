@@ -17,6 +17,8 @@ dist
 /index.d.ts
 /index-bundle.js
 /index-bundle.d.ts
+/value-choices.js
+/value-choices.d.ts
 /settings.js
 /settings.d.ts
 /osigma.js

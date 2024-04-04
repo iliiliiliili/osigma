@@ -214,6 +214,24 @@ export default class Camera extends TypedEventEmitter<CameraEvents> implements C
         const easing: (k: number) => number =
             typeof options.easing === "function" ? options.easing : easings[options.easing];
 
+
+        const animationOver = () => {
+
+            this.nextFrame = null;
+            this.setState(validState);
+
+            if (this.animationCallback) {
+                this.animationCallback.call(null);
+                this.animationCallback = undefined;
+            }
+        };
+
+        if (options.duration === 0) {
+
+            animationOver();
+            return;
+        }
+
         // State
         const start = Date.now(),
             initialState = this.getState();
@@ -224,14 +242,7 @@ export default class Camera extends TypedEventEmitter<CameraEvents> implements C
 
             // The animation is over:
             if (t >= 1) {
-                this.nextFrame = null;
-                this.setState(validState);
-
-                if (this.animationCallback) {
-                    this.animationCallback.call(null);
-                    this.animationCallback = undefined;
-                }
-
+                animationOver();
                 return;
             }
 

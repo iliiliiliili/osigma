@@ -1177,6 +1177,7 @@ export default class OSigma<
             );
         }
 
+        this.shouldDefaultGraphVisuals = false;
         return this;
     }
 
