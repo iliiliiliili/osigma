@@ -11,6 +11,7 @@ import {
     connectionVisualConstructorFromData,
 } from "../../src/types";
 import { ValueChoices } from "../../src/value-choices";
+import applyForceAtlas2 from "../../src/core/force-atlas-2";
 
 type TId = Int32Array;
 type TConnectionWeight = Uint8Array;
@@ -73,6 +74,7 @@ type TestDependencies = {
     };
     nodeVisualConstructorFromData: typeof nodeVisualConstructorFromData;
     connectionVisualConstructorFromData: typeof connectionVisualConstructorFromData;
+    applyForceAtlas2: typeof applyForceAtlas2;
     container: HTMLElement;
 };
 
@@ -267,11 +269,7 @@ export const tests: Tests = [
         name: "visual-from-spatial",
         scenario: async (page: Page): Promise<void> => {
             await page.evaluate(() => {
-                const {
-                    OSigma,
-                    OGraph,
-                    container,
-                } = dependencies;
+                const { OSigma, OGraph, container } = dependencies;
 
                 const graph = new OGraph<
                     TId,
@@ -296,12 +294,7 @@ export const tests: Tests = [
                     }
                 );
 
-                new OSigma(
-                    OSigma.makeVisualGraph(graph),
-                    container,
-                    {},
-                    true,
-                );
+                new OSigma(OSigma.makeVisualGraph(graph), container, {}, true);
             });
         },
     },
@@ -824,7 +817,6 @@ export const tests: Tests = [
                 );
 
                 renderer.getCamera().setState({ ratio: 3, x: 0.8, y: 0.7 });
-
             });
         },
     },
@@ -850,7 +842,6 @@ export const tests: Tests = [
                 );
 
                 renderer.getCamera().setState({ ratio: 1 / 3, x: 0.8, y: 0.7 });
-
             });
         },
     },
@@ -878,7 +869,6 @@ export const tests: Tests = [
                 );
 
                 renderer.getCamera().setState({ ratio: 3, x: 0.8, y: 0.7 });
-
             });
         },
     },
@@ -904,7 +894,6 @@ export const tests: Tests = [
                 );
 
                 renderer.getCamera().setState({ angle: 30 });
-
             });
         },
     },
@@ -922,21 +911,19 @@ export const tests: Tests = [
                 const graph = lesSmall[0];
                 const valueChoices = lesSmall[1];
 
-                new OSigma(
-                    graph,
-                    container,
-                    {},
-                    false,
-                    valueChoices
-                );
+                new OSigma(graph, container, {}, false, valueChoices);
 
-                const element = document.getElementsByClassName("osigma-mouse")[0];
-                const cEvent: Event & { clientX?: number; clientY?: number; deltaY?: number } = new Event("wheel");
+                const element =
+                    document.getElementsByClassName("osigma-mouse")[0];
+                const cEvent: Event & {
+                    clientX?: number;
+                    clientY?: number;
+                    deltaY?: number;
+                } = new Event("wheel");
                 cEvent.clientX = 0;
                 cEvent.clientY = 0;
                 cEvent.deltaY = -100;
                 element.dispatchEvent(cEvent);
-
             });
         },
     },
@@ -945,7 +932,6 @@ export const tests: Tests = [
         waitFor: 2000,
         scenario: async (page: Page): Promise<void> => {
             await page.evaluate(() => {
-
                 const {
                     OSigma,
                     OGraph,
@@ -1019,13 +1005,23 @@ export const tests: Tests = [
                                 [129, 129, 129, 129],
                                 [0, 0, 0, 0],
                                 [1, 2, 3, 20],
-                                [OSigma.encodeEdgeFlags(true, false, 1), defaultEdgeFlags, defaultEdgeFlags, defaultEdgeFlags]
+                                [
+                                    OSigma.encodeEdgeFlags(true, false, 1),
+                                    defaultEdgeFlags,
+                                    defaultEdgeFlags,
+                                    defaultEdgeFlags,
+                                ]
                             ),
                     }
                 );
 
-                new OSigma(graph, container, {}, false, new ValueChoices(labels));
-
+                new OSigma(
+                    graph,
+                    container,
+                    {},
+                    false,
+                    new ValueChoices(labels)
+                );
             });
         },
     },
@@ -1033,7 +1029,6 @@ export const tests: Tests = [
         name: "programs",
         scenario: async (page: Page): Promise<void> => {
             await page.evaluate(() => {
-
                 const {
                     OSigma,
                     OGraph,
@@ -1113,18 +1108,254 @@ export const tests: Tests = [
                     }
                 );
 
-                new OSigma(graph, container, {
-                    nodeProgramClasses: {
-                        0: NodeCircleProgram,
-                        1: NodePointProgram,
+                new OSigma(
+                    graph,
+                    container,
+                    {
+                        nodeProgramClasses: {
+                            0: NodeCircleProgram,
+                            1: NodePointProgram,
+                        },
+                        edgeProgramClasses: {
+                            0: EdgeLineProgram,
+                            1: EdgeRectangleProgram,
+                            2: EdgeArrowProgram,
+                            3: EdgeTriangleProgram,
+                        },
                     },
-                    edgeProgramClasses: {
-                        0: EdgeLineProgram,
-                        1: EdgeRectangleProgram,
-                        2: EdgeArrowProgram,
-                        3: EdgeTriangleProgram,
+                    false,
+                    new ValueChoices(labels)
+                );
+            });
+        },
+    },
+    {
+        name: "force-atlas-2-weighted",
+        scenario: async (page: Page): Promise<void> => {
+            await page.evaluate(() => {
+                const {
+                    OSigma,
+                    OGraph,
+                    container,
+                    nodeVisualConstructorFromData,
+                    connectionVisualConstructorFromData,
+                    applyForceAtlas2,
+                } = dependencies;
+
+                const defaultNodeFlags = OSigma.encodeNodeFlags(
+                    false,
+                    false,
+                    false,
+                    0
+                );
+
+                const defaultEdgeFlags = OSigma.encodeEdgeFlags(
+                    false,
+                    false,
+                    0
+                );
+
+                const arrowEdgeFlags = OSigma.encodeEdgeFlags(false, false, 1);
+
+                // Feature0, TColor, TLabel, TSize, TEdgeFlags
+                const features: TypedArray[] = [
+                    new Int8Array([10, 11, 12, 13]),
+                ];
+
+                // eslint-disable-next-line prefer-spread
+                features.push.apply(
+                    features,
+                    nodeVisualConstructorFromData(
+                        [111, 112, 113, 114],
+                        [1, 2, 3, 4],
+                        [10, 10, 10, 10],
+                        [
+                            defaultNodeFlags,
+                            defaultNodeFlags,
+                            defaultNodeFlags,
+                            defaultNodeFlags,
+                        ]
+                    )
+                );
+
+                const graph = new OGraph<
+                    TId,
+                    TConnectionWeight,
+                    TCoordinates,
+                    TZIndex,
+                    [...TNodeFeatures, ...TNodeVisual],
+                    [...TConnectionFeatures, ...TConnectionVisual]
+                >(
+                    {
+                        features: features as [
+                            ...TNodeFeatures,
+                            ...TNodeVisual
+                        ],
+                        xCoordinates: new Float32Array([0, 0, 5, 10]),
+                        yCoordinates: new Float32Array([0, 10, 10, 0]),
+                        zIndex: new Uint8Array([0, 0, 0, 0]),
+                    },
+                    {
+                        from: new Int32Array([0, 1, 2, 3, 0, 1]),
+                        to: new Int32Array([1, 2, 3, 0, 2, 3]),
+                        value: new Uint8Array([50, 50, 50, 1, 100, 50]),
+                        zIndex: new Uint8Array([0, 0, 0, 0, 0, 0]),
+                        features:
+                            // TColor, TLabel, TSize, TEdgeFlags
+                            connectionVisualConstructorFromData(
+                                [129, 129, 129, 129, 111, 111],
+                                [0, 0, 0, 0, 0, 0],
+                                [5, 5, 5, 5, 5, 5],
+                                [
+                                    arrowEdgeFlags,
+                                    arrowEdgeFlags,
+                                    arrowEdgeFlags,
+                                    arrowEdgeFlags,
+                                    defaultEdgeFlags,
+                                    defaultEdgeFlags,
+                                ]
+                            ),
                     }
-                }, false, new ValueChoices(labels));
+                );
+
+                applyForceAtlas2<
+                    Int32Array,
+                    TId,
+                    TConnectionWeight,
+                    TCoordinates,
+                    TZIndex,
+                    TNodeFeatures,
+                    TConnectionFeatures
+                >(graph, {
+                    steps: 10,
+                    nodeMassCreator: (c) => new Int32Array(c),
+                    coordinatesCreator: (c) => new Float32Array(c),
+                });
+
+                new OSigma(
+                    graph,
+                    container,
+                    {
+                        // renderEdgeLabels: true,
+                        // labelRenderedSizeThreshold: -Infinity,
+                    },
+                    false
+                );
+            });
+        },
+    },
+    {
+        name: "force-atlas-2-unweighted",
+        scenario: async (page: Page): Promise<void> => {
+            await page.evaluate(() => {
+                const {
+                    OSigma,
+                    OGraph,
+                    container,
+                    nodeVisualConstructorFromData,
+                    connectionVisualConstructorFromData,
+                    applyForceAtlas2,
+                } = dependencies;
+
+                const defaultNodeFlags = OSigma.encodeNodeFlags(
+                    false,
+                    false,
+                    false,
+                    0
+                );
+
+                const defaultEdgeFlags = OSigma.encodeEdgeFlags(
+                    false,
+                    false,
+                    0
+                );
+
+                const arrowEdgeFlags = OSigma.encodeEdgeFlags(false, false, 1);
+
+                // Feature0, TColor, TLabel, TSize, TEdgeFlags
+                const features: TypedArray[] = [
+                    new Int8Array([10, 11, 12, 13]),
+                ];
+
+                // eslint-disable-next-line prefer-spread
+                features.push.apply(
+                    features,
+                    nodeVisualConstructorFromData(
+                        [111, 112, 113, 114],
+                        [1, 2, 3, 4],
+                        [10, 10, 10, 10],
+                        [
+                            defaultNodeFlags,
+                            defaultNodeFlags,
+                            defaultNodeFlags,
+                            defaultNodeFlags,
+                        ]
+                    )
+                );
+
+                const graph = new OGraph<
+                    TId,
+                    TConnectionWeight,
+                    TCoordinates,
+                    TZIndex,
+                    [...TNodeFeatures, ...TNodeVisual],
+                    [...TConnectionFeatures, ...TConnectionVisual]
+                >(
+                    {
+                        features: features as [
+                            ...TNodeFeatures,
+                            ...TNodeVisual
+                        ],
+                        xCoordinates: new Float32Array([0, 0, 5, 10]),
+                        yCoordinates: new Float32Array([0, 10, 10, 0]),
+                        zIndex: new Uint8Array([0, 0, 0, 0]),
+                    },
+                    {
+                        from: new Int32Array([0, 1, 2, 3, 0, 1]),
+                        to: new Int32Array([1, 2, 3, 0, 2, 3]),
+                        value: new Uint8Array([1, 1, 1, 1, 1, 1]),
+                        zIndex: new Uint8Array([0, 0, 0, 0, 0, 0]),
+                        features:
+                            // TColor, TLabel, TSize, TEdgeFlags
+                            connectionVisualConstructorFromData(
+                                [129, 129, 129, 129, 111, 111],
+                                [0, 0, 0, 0, 0, 0],
+                                [5, 5, 5, 5, 5, 5],
+                                [
+                                    arrowEdgeFlags,
+                                    arrowEdgeFlags,
+                                    arrowEdgeFlags,
+                                    arrowEdgeFlags,
+                                    defaultEdgeFlags,
+                                    defaultEdgeFlags,
+                                ]
+                            ),
+                    }
+                );
+
+                applyForceAtlas2<
+                    Int32Array,
+                    TId,
+                    TConnectionWeight,
+                    TCoordinates,
+                    TZIndex,
+                    TNodeFeatures,
+                    TConnectionFeatures
+                >(graph, {
+                    steps: 10,
+                    nodeMassCreator: (c) => new Int32Array(c),
+                    coordinatesCreator: (c) => new Float32Array(c),
+                });
+
+                new OSigma(
+                    graph,
+                    container,
+                    {
+                        // renderEdgeLabels: true,
+                        // labelRenderedSizeThreshold: -Infinity,
+                    },
+                    false
+                );
             });
         },
     },

@@ -5,6 +5,7 @@ import {
     JsonVerboseGraph,
     jsonVerboseToVisualOGraph,
 } from "../../../src/core/ograph-loaders";
+import applyForceAtlas2 from "../../../src/core/force-atlas-2";
 
 // Programs to test
 import NodeCircleProgram from "../../../src/rendering/webgl/programs/node.circle";
@@ -110,6 +111,7 @@ globalize({
         data: { arcticSmall, arcticBig, lesSmall, lesBig },
         nodeVisualConstructorFromData,
         connectionVisualConstructorFromData,
+        applyForceAtlas2,
         programs: {
             NodeCircleProgram,
             NodePointProgram,

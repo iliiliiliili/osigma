@@ -132,16 +132,6 @@ export class OGraph<
         }
     }
 
-    public applyForceAtlas2Layout(min = 0, max = 100) {
-
-        for (let i = 0; i <= this.nodeCount; i++) {
-
-            this.nodes.xCoordinates[i] = Math.random() * (max - min) + min;
-            this.nodes.yCoordinates[i] = Math.random() * (max - min) + min;
-        }
-    }
-
-
     // OGraphologyInterface implementation start
 
     get order(): number {
