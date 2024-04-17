@@ -40,6 +40,7 @@ export function forceAtlas2Step<
         nodeNewDyArray: TCoordinates;
         nodeMass: TNodeMass;
         nodeConvergence: TCoordinates;
+        debug?: boolean;
     }
 ) {
     const order = graph.nodeCount,
@@ -63,6 +64,25 @@ export function forceAtlas2Step<
     const slowDown = options.slowDown ?? 1;
     const strongGravityMode = options.strongGravityMode ?? false;
 
+    const debug = options.debug ?? false;
+
+    const debugLog = debug
+        ? (state: string) => {
+              console.log({
+                  state,
+                  fdx: options.nodeNewDxArray[0],
+                  fdy: options.nodeNewDyArray[0],
+                  dx: options.nodeNewDxArray.slice(0, 10),
+                  dy: options.nodeNewDyArray.slice(0, 10),
+                  x: graph.nodes.xCoordinates.slice(0, 10),
+                  y: graph.nodes.yCoordinates.slice(0, 10),
+                  mass: options.nodeMass,
+              });
+          }
+        : (_: string) => false;
+
+    debugLog("start");
+
     const nodeSizeFeatureId = OSigma.getNodeSizeFeatureId(
         graph.nodes.features.length
     );
@@ -83,10 +103,15 @@ export function forceAtlas2Step<
     outboundAttCompensation = 0;
     if (outboundAttractionDistribution) {
         for (let n = 0; n < order; n++) {
-            outboundAttCompensation += options.nodeMass[n];
+            outboundAttCompensation += options.nodeMass[n] / order;
         }
+    }
 
-        outboundAttCompensation /= order;
+    if (debug) {
+        console.log({
+            outboundAttractionDistribution,
+            outboundAttCompensation,
+        });
     }
 
     // 2) Repulsion
@@ -94,6 +119,8 @@ export function forceAtlas2Step<
     // NOTES: adjustSizes = antiCollision & scalingRatio = coefficient
     if (true == true || true) {
         coefficient = scalingRatio;
+
+        factor = 0;
 
         // Square iteration
         for (let n1 = 0; n1 < order; n1++) {
@@ -148,7 +175,6 @@ export function forceAtlas2Step<
                             (coefficient *
                                 options.nodeMass[n1] *
                                 options.nodeMass[n2]) /
-                            distance /
                             distance;
 
                         // Updating nodes' dx and dy
@@ -159,9 +185,22 @@ export function forceAtlas2Step<
                         options.nodeNewDyArray[n2] -= yDist * factor;
                     }
                 }
+
+                if (debug && n2 == 0 && n1 < 4) {
+                    console.log({
+                        state: `repulsion values ${n1} ${n2}`,
+                        xDist,
+                        yDist,
+                        factor,
+                        m1: options.nodeMass[n1],
+                        m2: options.nodeMass[n2],
+                    });
+                }
             }
         }
     }
+
+    debugLog("repulsed");
 
     // 3) Gravity
     //------------
@@ -188,6 +227,8 @@ export function forceAtlas2Step<
         options.nodeNewDxArray[n] -= xDist * factor;
         options.nodeNewDyArray[n] -= yDist * factor;
     }
+
+    debugLog("applied gravity");
 
     // 4) Attraction
     //---------------
@@ -292,6 +333,8 @@ export function forceAtlas2Step<
             options.nodeNewDyArray[n2] -= yDist * factor;
         }
     }
+
+    debugLog("applied attraction");
 
     // 5) Apply Forces
     //-----------------
@@ -406,6 +449,8 @@ export function forceAtlas2Step<
             graph.nodes.yCoordinates[n] = newY;
         }
     }
+
+    debugLog("applied forces");
 }
 
 export default function applyForceAtlas2<
@@ -440,6 +485,7 @@ export default function applyForceAtlas2<
         nodeMassCreator: (count: number) => TNodeMass;
         coordinatesCreator: (count: number) => TCoordinates;
         verbose?: boolean;
+        debug?: boolean;
     }
 ) {
     const steps = options.steps ?? 50;
@@ -456,14 +502,18 @@ export default function applyForceAtlas2<
         console.log("ForceAtlas2: Computing mass");
     }
 
-    for (let i = 0; i < graph.connectionCount; i++) {
-        const from = graph.connections.from[i];
-        const to = graph.connections.to[i];
-        const value = graph.connections.value[i];
+    // for (let i = 0; i < graph.connectionCount; i++) {
+    //     const from = graph.connections.from[i];
+    //     const to = graph.connections.to[i];
+    //     const value = graph.connections.value[i];
 
-        nodeMass[from] += value;
-        nodeMass[to] += value;
-    }
+    //     nodeMass[from] += value;
+    //     nodeMass[to] += value;
+    // }
+
+    // for (let i = 0; i < graph.nodeCount; i++) {
+    //     nodeMass[i] = Math.sqrt(nodeMass[i]);
+    // }
 
     if (verbose) {
         console.log("ForceAtlas2: Computing steps");
